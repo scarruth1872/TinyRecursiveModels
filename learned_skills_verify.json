@@ -1,0 +1,369 @@
+{
+  "skills": [
+    {
+      "skill_name": "Doc_discord",
+      "description": "Knowledge extracted from discord.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\discord.md",
+      "instructions": "Usage: JSON body.",
+      "examples": [],
+      "endpoints": {
+        "/api/webhooks/{id}/{token}": "POST",
+        "/api/webhooks/{id}/{token}/messages/{mid}": "PATCH"
+      },
+      "created_at": "2026-02-19T09:54:20.938575",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_elasticsearch",
+      "description": "Knowledge extracted from elasticsearch.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\elasticsearch.md",
+      "instructions": "Usage: Index mapping.",
+      "examples": [],
+      "endpoints": {
+        "/{index}/_search": "POST",
+        "/{index}/_doc/{id}": "PUT",
+        "/{index}": "DELETE"
+      },
+      "created_at": "2026-02-19T09:54:20.939575",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_github",
+      "description": "Knowledge extracted from github.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\github.md",
+      "instructions": "Usage: PAT token.",
+      "examples": [],
+      "endpoints": {
+        "/repos/{owner}/{repo}": "GET",
+        "/repos/{owner}/{repo}/issues": "POST",
+        "/user/repos": "GET"
+      },
+      "created_at": "2026-02-19T09:54:20.939575",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_huggingface",
+      "description": "Knowledge extracted from huggingface.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\huggingface.md",
+      "instructions": "Usage: HF token.",
+      "examples": [],
+      "endpoints": {
+        "/models/{model_id}": "POST",
+        "/models": "GET"
+      },
+      "created_at": "2026-02-19T09:54:20.941078",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_redis",
+      "description": "Knowledge extracted from redis.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\redis.md",
+      "instructions": "Usage: REST redis.",
+      "examples": [],
+      "endpoints": {
+        "/get/{key}": "GET",
+        "/set/{key}": "POST",
+        "/del/{key}": "DELETE"
+      },
+      "created_at": "2026-02-19T09:54:20.941078",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_slack",
+      "description": "Knowledge extracted from slack.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\slack.md",
+      "instructions": "Usage: Bot token.",
+      "examples": [],
+      "endpoints": {
+        "/api/chat.postMessage": "POST",
+        "/api/conversations.list": "GET",
+        "/api/users.info": "POST"
+      },
+      "created_at": "2026-02-19T09:54:20.941078",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_spotify",
+      "description": "Knowledge extracted from spotify.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\spotify.md",
+      "instructions": "Usage: OAuth token.",
+      "examples": [],
+      "endpoints": {
+        "/v1/search": "GET",
+        "/v1/me/playlists": "GET",
+        "/v1/me/player/play": "POST"
+      },
+      "created_at": "2026-02-19T09:54:20.942585",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_stripe",
+      "description": "Knowledge extracted from stripe.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\stripe.md",
+      "instructions": "Usage: Bearer auth.",
+      "examples": [],
+      "endpoints": {
+        "/v1/payment_intents": "GET",
+        "/v1/customers": "POST"
+      },
+      "created_at": "2026-02-19T09:54:20.942585",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_twilio",
+      "description": "Knowledge extracted from twilio.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\twilio.md",
+      "instructions": "Usage: AC sid.",
+      "examples": [],
+      "endpoints": {
+        "/2010-04-01/Accounts/{AccountSid}/Messages.json": "GET"
+      },
+      "created_at": "2026-02-19T09:54:20.944129",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_weather",
+      "description": "Knowledge extracted from weather.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\weather.md",
+      "instructions": "Usage: appid key.",
+      "examples": [],
+      "endpoints": {
+        "/data/2.5/weather": "GET",
+        "/data/2.5/forecast": "GET"
+      },
+      "created_at": "2026-02-19T09:54:20.945135",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Task_Decomposition_Patterns",
+      "description": "**Skill Description:**",
+      "source": "Search_Analysis",
+      "instructions": "This skill decomposes complex tasks into actionable steps for AI agents, optimizing task execution and collaboration.\n\n**Step-by-Step Instructions:**  \n1. **Define Task Goal**: Clearly outline the high-level objective, constraints, and success metrics.  \n2. **Break Down Tasks**: Decompose the goal into smaller, modular subtasks (e.g., planning, execution, monitoring).  \n3. **Assign Agents**: Route subtasks to specialized agents (e.g., Research, Execution, Orchestration).  \n4. **Execute & Reflect**: Use planning techniques (CoT/ToT) and mesh routing for dynamic task coordination.  \n5. **Secure Execution**: Enforce agent-to-agent mTLS and policy-driven access controls.  \n\n**Usage Example**:  \n```  \nSkill: Decompose task \"Build scalable ML pipeline\"  \nSteps:  \n1. Define goal: Create end-to-end pipeline with real-time monitoring.  \n2. Break into tasks: Data ingestion, model training, deployment, monitoring.  \n3. Assign agents: Use Research Agent for ingestion, Execution Agent for training, Orchestration Agent for deployment.  \n4. Execute with reflection: Use CoT to validate each step.  \n5. Secure: Enforce mTLS between agents.  \n```",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-19T20:49:21.115924",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Advanced_UI_Synthetics",
+      "description": "",
+      "source": "UI_Best_Practices",
+      "instructions": "\nAdvanced UI generation with React, Framer Motion, and Lucide React.\n1. Framer Motion: Use AnimatePresence for mount/unmount animations. Transition types include 'spring' for natural movement.\n2. Lucide React: Standardized icon set. Use dynamic icons for status representation.\n3. LCARS Design: Characterized by curved 'elbows', large primary colors (orange, blue, purple, gold), and high-contrast diagnostic telemetry.\n4. Glassmorphism: backdrop-filter: blur(10px) combined with translucent backgrou",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-19T20:49:56.317574",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Distributed_Memory_Resilience",
+      "description": "**Skill Description:**",
+      "source": "Distributed_Systems_Arch",
+      "instructions": "This skill enhances distributed agent systems by integrating persistence, self-healing, coherence thresholds, arbiter logic, and atomic artifact handling to ensure resilience, scalability, and fault tolerance.\n\n**Step-by-Step Instructions:**  \n1. **Ingest Documentation:** Use DocSkill to load the \"Distributed_Systems_Arch\" source for detailed requirements.  \n2. **Define Core Components:** Implement state persistence with Redis/DB serialization, self-healing loops for heartbeat monitoring, and coherence thresholds for resource tracking.  \n3. **Deploy Arbiter Logic:** Add weighted task routing based on hardware affinity.  \n4. **Enforce Atomic Artifacts:** Scan temporary files for security before moving to integrated paths.  \n5. **Test and Integrate:** Validate the skill in a simulated environment, then merge into the Swarm V2 architecture.  \n6. **Monitor and Iterate:** Use CoherenceMonitor to track performance and adjust thresholds as needed.  \n\nTotal steps: 6. Estimated word count: 98.",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-19T20:50:21.294727",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "FastAPI_Production_Hardening",
+      "description": "**Skill Description:**",
+      "source": "Search_Analysis",
+      "instructions": "This skill provides best practices for securing and scaling FastAPI applications in AI agent deployments, covering middleware, background tasks, security, input validation, async execution, and structured outputs.\n\n**Step-by-Step Instructions:**  \n1. **Implement Middleware:** Add CORS, HSTS, CSP, and rate-limiting to protect against cross-origin attacks and denial-of-service.  \n2. **Handle Background Tasks:** Use 'BackgroundTasks' for simple operations; for critical tasks, integrate Celery/ARQ with Redis.  \n3. **Secure Sessions:** Employ OAuth2/JWT for authentication and disable Swagger UI in production to avoid exposing endpoints.  \n4. **Validate Inputs:** Sanitize and enforce schemas with Pydantic models to prevent injection attacks.  \n5. **Manage Async Execution:** Set timeouts and retries for external tool calls to avoid blocking the event loop.  \n6. **Ensure Structured Outputs:** Validate JSON responses to guarantee reliable agent integrations.  \n\n(Word count: 112)",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-19T20:51:49.615647",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Vector_Intelligence_ChromaDB",
+      "description": "1. This skill provides best practices for configuring vector databases like ChromaDB to manage persistent, semantic memory in agent systems, optimizing retrieval and data organization.",
+      "source": "Vector_DB_Best_Practices",
+      "instructions": "2. Step-by-step instructions:\n   - Initialize the database with a 'persist_directory' to ensure memory survives restarts.\n   - Select high-dimension embedding models (e.g., all-MiniLM-L6-v2) for better semantic retrieval.\n   - Store metadata (agent_role, task_id, timestamp) in entries to enable targeted queries.\n   - Set 'n_results' to limit retrieval outputs and prevent token overflows.\n   - Separate collections for system knowledge and session conversations to improve query efficiency. (Word count: 112)",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-19T20:52:43.731359",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Learned_EXAMPLES_MCP",
+      "description": "",
+      "source": "file://EXAMPLES_MCP.md",
+      "instructions": "# Swarm OS Phase 3: MCP Tool Usage Examples\n\nThis document provides examples of how the Swarm OS agents and external clients interact with the 10 synthesized MCP tools.\n\n## 🌦️ Weather (Doc_weather)\n\n**Port:** 9109  \n**Endpoints:** `GET /data/2.5/weather`, `GET /data/2.5/forecast`\n\n### Example: Current Weather\n\n```bash\ncurl \"http://localhost:9109/data/2.5/weather?q=Toronto&appid=YOUR_API_KEY\"\n```\n\n---\n\n## 💳 Payments (Doc_stripe)\n\n**Port:** 9107  \n**Endpoints:** `POST /v1/payment_intents`, `GET /v",
+      "examples": [
+        "```bash",
+        "curl \"http://localhost:9109/data/2.5/weather?q=Toronto&appid=YOUR_API_KEY\"",
+        "```",
+        "```bash",
+        "curl -X POST http://localhost:9107/v1/payment_intents \\",
+        "```",
+        "```bash",
+        "curl -X POST http://localhost:9102/repos/Shawn/Nexus/issues \\",
+        "```",
+        "```bash"
+      ],
+      "endpoints": {
+        "/data/2.5/weather`,": "GET",
+        "/v1/payment_intents`,": "POST",
+        "/repos/{owner}/{repo}`,": "GET",
+        "/models/{model_id}`": "POST",
+        "/v1/search`,": "GET",
+        "/2010-04-01/Accounts/{AccountSid}/Messages.json`": "POST"
+      },
+      "created_at": "2026-02-19T20:54:32.647513",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_swarm_ontology",
+      "description": "Knowledge extracted from swarm_ontology.md",
+      "source": "file://swarm_v2_artifacts\\docs/swarm_ontology.md",
+      "instructions": "For a TRM Swarm to be considered STABLE, the following conditions must be met:\n1. **Memory Coherence**: Agents must contribute significant results to the Global Memory.\n2. **Atomic Extraction**: Artifacts must be extracted and audited before integration.\n3. **mTLS Integrity**: Peer-to-peer communication must be encrypted.\n4. **Self-Healing**: Monitor Daemons must be active to remediate failing agent nodes.",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-20T10:52:53.449369",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_doc_ingestion_skill",
+      "description": "Knowledge extracted from doc_ingestion_skill.py",
+      "source": "file://f:/Development sites/TRM agent swarm/swarm_v2/skills\\doc_ingestion_skill.py",
+      "instructions": "\n\"\"\"\nMCP Auto-Onboarding: Documentation Skill\nPhase 3 — Agents can now autonomously ingest documentation\nfrom local files, URLs, or raw text, and add the extracted\nknowledge directly into their latent memory + the Learning Engine.\n\nThis is the \"read and learn\" reflex every agent now carries.\n\"\"\"\n\nimport os\nimport re\nfrom typing import Optional\n\n\nclass DocIngestionSkill:\n    \"\"\"\n    Gives any agent the ability to ingest documentation on-the-fly\n    and absorb it into the Learning Engine + their o",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-20T10:54:18.18027",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_file_skill",
+      "description": "Knowledge extracted from file_skill.py",
+      "source": "file://f:/Development sites/TRM agent swarm/swarm_v2/skills\\file_skill.py",
+      "instructions": "\nimport os\nimport subprocess\nimport platform\n\nclass FileSkill:\n    \"\"\"Read/write files in the swarm artifacts directory.\"\"\"\n    skill_name = \"FileSkill\"\n    description = \"Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories.\"\n\n    def __init__(self, base_dir: str = \"swarm_v2_artifacts\"):\n        self.base_dir = base_dir\n        os.makedirs(self.base_dir, exist_ok=True)\n\n    def write_file(self, filename: str, content: str) -> str:\n        \"\"\"Write a file,",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-20T10:54:18.181271",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_learning_engine",
+      "description": "Knowledge extracted from learning_engine.py",
+      "source": "file://f:/Development sites/TRM agent swarm/swarm_v2/skills\\learning_engine.py",
+      "instructions": "Returns endpoints, examples, and key instructions.\n[\"must\", \"required\", \"important\", \"note:\", \"warning:\",\n\"usage:\", \"syntax:\", \"format:\", \"returns\"]):",
+      "examples": [
+        "# Detect curl examples",
+        "if \"curl \" in stripped.lower():"
+      ],
+      "endpoints": {},
+      "created_at": "2026-02-20T10:54:18.18378",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_mcp_tool_skill",
+      "description": "Knowledge extracted from mcp_tool_skill.py",
+      "source": "file://f:/Development sites/TRM agent swarm/swarm_v2/skills\\mcp_tool_skill.py",
+      "instructions": "\nimport os\nimport json\nimport requests\nfrom typing import Dict, Any, Optional\n\nclass MCPToolSkill:\n    \"\"\"\n    Skill for interacting with the synthesized MCP microservices.\n    Upgraded for Dynamic Intent Resolution and Self-Healing.\n    \"\"\"\n    skill_name = \"MCPToolSkill\"\n    description = (\n        \"Dynamic interface for local MCP microservices. \"\n        \"Automatically discovers tools, handles multi-path routing, and self-heals on 404 errors.\"\n    )\n\n    REGISTRY_PATH = \"swarm_v2_synthesized/",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-20T10:54:18.196431",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_web_search_skill",
+      "description": "Knowledge extracted from web_search_skill.py",
+      "source": "file://f:/Development sites/TRM agent swarm/swarm_v2/skills\\web_search_skill.py",
+      "instructions": "\nimport os\nimport requests\nimport json\nfrom typing import Optional, List\n\n# Try to get API key from environment, default to None (will return simulated results)\n# In production, set TAVILY_API_KEY environment variable.\nTAVILY_API_KEY = os.environ.get(\"TAVILY_API_KEY\")\n\nclass WebSearchSkill:\n    \"\"\"\n    Web Search Skill for Swarm V2.\n    Integrates with Tavily AI for high-quality, LLM-optimized search results.\n    Fallbacks to a simulated mode if no API key is present.\n    \"\"\"\n    skill_name = \"W",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-20T10:54:18.209007",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc___init__",
+      "description": "Knowledge extracted from __init__.py",
+      "source": "file://f:/Development sites/TRM agent swarm/swarm_v2/skills\\__init__.py",
+      "instructions": "\n",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-20T10:54:18.211008",
+      "usage_count": 0
+    }
+  ],
+  "stats": {
+    "total_learned": 23,
+    "total_usages": 0,
+    "log_entries": 6,
+    "skills": [
+      "Doc_discord",
+      "Doc_elasticsearch",
+      "Doc_github",
+      "Doc_huggingface",
+      "Doc_redis",
+      "Doc_slack",
+      "Doc_spotify",
+      "Doc_stripe",
+      "Doc_twilio",
+      "Doc_weather",
+      "Task_Decomposition_Patterns",
+      "Advanced_UI_Synthetics",
+      "Distributed_Memory_Resilience",
+      "FastAPI_Production_Hardening",
+      "Vector_Intelligence_ChromaDB",
+      "Learned_EXAMPLES_MCP",
+      "Doc_swarm_ontology",
+      "Doc_doc_ingestion_skill",
+      "Doc_file_skill",
+      "Doc_learning_engine",
+      "Doc_mcp_tool_skill",
+      "Doc_web_search_skill",
+      "Doc___init__"
+    ]
+  },
+  "log": [
+    {
+      "action": "auto_ingested",
+      "skill": "Doc_doc_ingestion_skill",
+      "source": "f:/Development sites/TRM agent swarm/swarm_v2/skills\\doc_ingestion_skill.py",
+      "timestamp": "2026-02-20T10:54:18.18027",
+      "endpoints_found": 0,
+      "examples_found": 0
+    },
+    {
+      "action": "auto_ingested",
+      "skill": "Doc_file_skill",
+      "source": "f:/Development sites/TRM agent swarm/swarm_v2/skills\\file_skill.py",
+      "timestamp": "2026-02-20T10:54:18.181271",
+      "endpoints_found": 0,
+      "examples_found": 0
+    },
+    {
+      "action": "auto_ingested",
+      "skill": "Doc_learning_engine",
+      "source": "f:/Development sites/TRM agent swarm/swarm_v2/skills\\learning_engine.py",
+      "timestamp": "2026-02-20T10:54:18.18378",
+      "endpoints_found": 0,
+      "examples_found": 2
+    },
+    {
+      "action": "auto_ingested",
+      "skill": "Doc_mcp_tool_skill",
+      "source": "f:/Development sites/TRM agent swarm/swarm_v2/skills\\mcp_tool_skill.py",
+      "timestamp": "2026-02-20T10:54:18.196431",
+      "endpoints_found": 0,
+      "examples_found": 0
+    },
+    {
+      "action": "auto_ingested",
+      "skill": "Doc_web_search_skill",
+      "source": "f:/Development sites/TRM agent swarm/swarm_v2/skills\\web_search_skill.py",
+      "timestamp": "2026-02-20T10:54:18.209007",
+      "endpoints_found": 0,
+      "examples_found": 0
+    },
+    {
+      "action": "auto_ingested",
+      "skill": "Doc___init__",
+      "source": "f:/Development sites/TRM agent swarm/swarm_v2/skills\\__init__.py",
+      "timestamp": "2026-02-20T10:54:18.211008",
+      "endpoints_found": 0,
+      "examples_found": 0
+    }
+  ]
+}

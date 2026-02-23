@@ -1,0 +1,240 @@
+{
+  "skills": [
+    {
+      "skill_name": "Doc_discord",
+      "description": "Knowledge extracted from discord.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\discord.md",
+      "instructions": "Usage: JSON body.",
+      "examples": [],
+      "endpoints": {
+        "/api/webhooks/{id}/{token}": "POST",
+        "/api/webhooks/{id}/{token}/messages/{mid}": "PATCH"
+      },
+      "created_at": "2026-02-19T09:54:20.938575",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_elasticsearch",
+      "description": "Knowledge extracted from elasticsearch.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\elasticsearch.md",
+      "instructions": "Usage: Index mapping.",
+      "examples": [],
+      "endpoints": {
+        "/{index}/_search": "POST",
+        "/{index}/_doc/{id}": "PUT",
+        "/{index}": "DELETE"
+      },
+      "created_at": "2026-02-19T09:54:20.939575",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_github",
+      "description": "Knowledge extracted from github.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\github.md",
+      "instructions": "Usage: PAT token.",
+      "examples": [],
+      "endpoints": {
+        "/repos/{owner}/{repo}": "GET",
+        "/repos/{owner}/{repo}/issues": "POST",
+        "/user/repos": "GET"
+      },
+      "created_at": "2026-02-19T09:54:20.939575",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_huggingface",
+      "description": "Knowledge extracted from huggingface.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\huggingface.md",
+      "instructions": "Usage: HF token.",
+      "examples": [],
+      "endpoints": {
+        "/models/{model_id}": "POST",
+        "/models": "GET"
+      },
+      "created_at": "2026-02-19T09:54:20.941078",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_redis",
+      "description": "Knowledge extracted from redis.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\redis.md",
+      "instructions": "Usage: REST redis.",
+      "examples": [],
+      "endpoints": {
+        "/get/{key}": "GET",
+        "/set/{key}": "POST",
+        "/del/{key}": "DELETE"
+      },
+      "created_at": "2026-02-19T09:54:20.941078",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_slack",
+      "description": "Knowledge extracted from slack.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\slack.md",
+      "instructions": "Usage: Bot token.",
+      "examples": [],
+      "endpoints": {
+        "/api/chat.postMessage": "POST",
+        "/api/conversations.list": "GET",
+        "/api/users.info": "POST"
+      },
+      "created_at": "2026-02-19T09:54:20.941078",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_spotify",
+      "description": "Knowledge extracted from spotify.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\spotify.md",
+      "instructions": "Usage: OAuth token.",
+      "examples": [],
+      "endpoints": {
+        "/v1/search": "GET",
+        "/v1/me/playlists": "GET",
+        "/v1/me/player/play": "POST"
+      },
+      "created_at": "2026-02-19T09:54:20.942585",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_stripe",
+      "description": "Knowledge extracted from stripe.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\stripe.md",
+      "instructions": "Usage: Bearer auth.",
+      "examples": [],
+      "endpoints": {
+        "/v1/payment_intents": "GET",
+        "/v1/customers": "POST"
+      },
+      "created_at": "2026-02-19T09:54:20.942585",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_twilio",
+      "description": "Knowledge extracted from twilio.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\twilio.md",
+      "instructions": "Usage: AC sid.",
+      "examples": [],
+      "endpoints": {
+        "/2010-04-01/Accounts/{AccountSid}/Messages.json": "GET"
+      },
+      "created_at": "2026-02-19T09:54:20.944129",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Doc_weather",
+      "description": "Knowledge extracted from weather.md",
+      "source": "file://swarm_v2_artifacts\\seed_docs\\weather.md",
+      "instructions": "Usage: appid key.",
+      "examples": [],
+      "endpoints": {
+        "/data/2.5/weather": "GET",
+        "/data/2.5/forecast": "GET"
+      },
+      "created_at": "2026-02-19T09:54:20.945135",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Task_Decomposition_Patterns",
+      "description": "**Skill Description:**",
+      "source": "Search_Analysis",
+      "instructions": "This skill decomposes complex tasks into actionable steps for AI agents, optimizing task execution and collaboration.\n\n**Step-by-Step Instructions:**  \n1. **Define Task Goal**: Clearly outline the high-level objective, constraints, and success metrics.  \n2. **Break Down Tasks**: Decompose the goal into smaller, modular subtasks (e.g., planning, execution, monitoring).  \n3. **Assign Agents**: Route subtasks to specialized agents (e.g., Research, Execution, Orchestration).  \n4. **Execute & Reflect**: Use planning techniques (CoT/ToT) and mesh routing for dynamic task coordination.  \n5. **Secure Execution**: Enforce agent-to-agent mTLS and policy-driven access controls.  \n\n**Usage Example**:  \n```  \nSkill: Decompose task \"Build scalable ML pipeline\"  \nSteps:  \n1. Define goal: Create end-to-end pipeline with real-time monitoring.  \n2. Break into tasks: Data ingestion, model training, deployment, monitoring.  \n3. Assign agents: Use Research Agent for ingestion, Execution Agent for training, Orchestration Agent for deployment.  \n4. Execute with reflection: Use CoT to validate each step.  \n5. Secure: Enforce mTLS between agents.  \n```",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-19T20:49:21.115924",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Advanced_UI_Synthetics",
+      "description": "",
+      "source": "UI_Best_Practices",
+      "instructions": "\nAdvanced UI generation with React, Framer Motion, and Lucide React.\n1. Framer Motion: Use AnimatePresence for mount/unmount animations. Transition types include 'spring' for natural movement.\n2. Lucide React: Standardized icon set. Use dynamic icons for status representation.\n3. LCARS Design: Characterized by curved 'elbows', large primary colors (orange, blue, purple, gold), and high-contrast diagnostic telemetry.\n4. Glassmorphism: backdrop-filter: blur(10px) combined with translucent backgrou",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-19T20:49:56.317574",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Distributed_Memory_Resilience",
+      "description": "**Skill Description:**",
+      "source": "Distributed_Systems_Arch",
+      "instructions": "This skill enhances distributed agent systems by integrating persistence, self-healing, coherence thresholds, arbiter logic, and atomic artifact handling to ensure resilience, scalability, and fault tolerance.\n\n**Step-by-Step Instructions:**  \n1. **Ingest Documentation:** Use DocSkill to load the \"Distributed_Systems_Arch\" source for detailed requirements.  \n2. **Define Core Components:** Implement state persistence with Redis/DB serialization, self-healing loops for heartbeat monitoring, and coherence thresholds for resource tracking.  \n3. **Deploy Arbiter Logic:** Add weighted task routing based on hardware affinity.  \n4. **Enforce Atomic Artifacts:** Scan temporary files for security before moving to integrated paths.  \n5. **Test and Integrate:** Validate the skill in a simulated environment, then merge into the Swarm V2 architecture.  \n6. **Monitor and Iterate:** Use CoherenceMonitor to track performance and adjust thresholds as needed.  \n\nTotal steps: 6. Estimated word count: 98.",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-19T20:50:21.294727",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "FastAPI_Production_Hardening",
+      "description": "**Skill Description:**",
+      "source": "Search_Analysis",
+      "instructions": "This skill provides best practices for securing and scaling FastAPI applications in AI agent deployments, covering middleware, background tasks, security, input validation, async execution, and structured outputs.\n\n**Step-by-Step Instructions:**  \n1. **Implement Middleware:** Add CORS, HSTS, CSP, and rate-limiting to protect against cross-origin attacks and denial-of-service.  \n2. **Handle Background Tasks:** Use 'BackgroundTasks' for simple operations; for critical tasks, integrate Celery/ARQ with Redis.  \n3. **Secure Sessions:** Employ OAuth2/JWT for authentication and disable Swagger UI in production to avoid exposing endpoints.  \n4. **Validate Inputs:** Sanitize and enforce schemas with Pydantic models to prevent injection attacks.  \n5. **Manage Async Execution:** Set timeouts and retries for external tool calls to avoid blocking the event loop.  \n6. **Ensure Structured Outputs:** Validate JSON responses to guarantee reliable agent integrations.  \n\n(Word count: 112)",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-19T20:51:49.615647",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Vector_Intelligence_ChromaDB",
+      "description": "1. This skill provides best practices for configuring vector databases like ChromaDB to manage persistent, semantic memory in agent systems, optimizing retrieval and data organization.",
+      "source": "Vector_DB_Best_Practices",
+      "instructions": "2. Step-by-step instructions:\n   - Initialize the database with a 'persist_directory' to ensure memory survives restarts.\n   - Select high-dimension embedding models (e.g., all-MiniLM-L6-v2) for better semantic retrieval.\n   - Store metadata (agent_role, task_id, timestamp) in entries to enable targeted queries.\n   - Set 'n_results' to limit retrieval outputs and prevent token overflows.\n   - Separate collections for system knowledge and session conversations to improve query efficiency. (Word count: 112)",
+      "examples": [],
+      "endpoints": {},
+      "created_at": "2026-02-19T20:52:43.731359",
+      "usage_count": 0
+    },
+    {
+      "skill_name": "Learned_EXAMPLES_MCP",
+      "description": "",
+      "source": "file://EXAMPLES_MCP.md",
+      "instructions": "# Swarm OS Phase 3: MCP Tool Usage Examples\n\nThis document provides examples of how the Swarm OS agents and external clients interact with the 10 synthesized MCP tools.\n\n## 🌦️ Weather (Doc_weather)\n\n**Port:** 9109  \n**Endpoints:** `GET /data/2.5/weather`, `GET /data/2.5/forecast`\n\n### Example: Current Weather\n\n```bash\ncurl \"http://localhost:9109/data/2.5/weather?q=Toronto&appid=YOUR_API_KEY\"\n```\n\n---\n\n## 💳 Payments (Doc_stripe)\n\n**Port:** 9107  \n**Endpoints:** `POST /v1/payment_intents`, `GET /v",
+      "examples": [
+        "```bash",
+        "curl \"http://localhost:9109/data/2.5/weather?q=Toronto&appid=YOUR_API_KEY\"",
+        "```",
+        "```bash",
+        "curl -X POST http://localhost:9107/v1/payment_intents \\",
+        "```",
+        "```bash",
+        "curl -X POST http://localhost:9102/repos/Shawn/Nexus/issues \\",
+        "```",
+        "```bash"
+      ],
+      "endpoints": {
+        "/data/2.5/weather`,": "GET",
+        "/v1/payment_intents`,": "POST",
+        "/repos/{owner}/{repo}`,": "GET",
+        "/models/{model_id}`": "POST",
+        "/v1/search`,": "GET",
+        "/2010-04-01/Accounts/{AccountSid}/Messages.json`": "POST"
+      },
+      "created_at": "2026-02-19T20:54:32.647513",
+      "usage_count": 0
+    }
+  ],
+  "stats": {
+    "total_learned": 16,
+    "total_usages": 0,
+    "log_entries": 0,
+    "skills": [
+      "Doc_discord",
+      "Doc_elasticsearch",
+      "Doc_github",
+      "Doc_huggingface",
+      "Doc_redis",
+      "Doc_slack",
+      "Doc_spotify",
+      "Doc_stripe",
+      "Doc_twilio",
+      "Doc_weather",
+      "Task_Decomposition_Patterns",
+      "Advanced_UI_Synthetics",
+      "Distributed_Memory_Resilience",
+      "FastAPI_Production_Hardening",
+      "Vector_Intelligence_ChromaDB",
+      "Learned_EXAMPLES_MCP"
+    ]
+  },
+  "log": []
+}
