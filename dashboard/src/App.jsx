@@ -1,21 +1,21 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const API_BASE = 'http://localhost:8001';
 import {
   Terminal, Cpu, Activity, RefreshCw, MessageSquare, Users, Send,
   Shield, Zap, ChevronRight, Lock, Boxes, GitBranch, Play, X, Plus,
   Loader2, CheckCircle2, Brain, FileText, XCircle, ArrowRight,
   TestTube, Package, Eye, Check, Ban, RotateCcw, Rocket, ScrollText,
   BookOpen, Sparkles, Trash2, Upload, GraduationCap, Network, Database,
-  Wrench, Globe, Radio, Orbit, LayoutDashboard, Layers
+  Wrench, Globe, Radio, Orbit, LayoutDashboard, Layers,
+  Beaker, GitMerge, Server
 } from 'lucide-react';
 import axios from 'axios';
 import MeshHeatmap from './components/MeshHeatmap';
 
-const API_BASE = 'http://localhost:8001';
-
 // ─── Component: LCARS Sidebar ───────────────────────────────────────────
-const LCARS_Sidebar = ({ activeTab, onTabChange, stats }) => {
+const Sidebar = ({ activeTab, onTabChange, stats }) => {
   const menuItems = [
     { id: 'overview', label: '01 SYSTEM STATUS', color: 'orange' },
     { id: 'chat', label: '02 NEURAL BRIDGE', color: 'purple' },
@@ -24,43 +24,24 @@ const LCARS_Sidebar = ({ activeTab, onTabChange, stats }) => {
     { id: 'learning', label: '05 SKILL REGISTRY', color: 'gold' },
     { id: 'mesh', label: '06 MESH NET', color: 'orange' },
     { id: 'telemetry', label: '07 TELEMETRY', color: 'cyan' },
+    { id: 'federation', label: '08 FEDERATION', color: 'red' },
+    { id: 'security', label: '09 SECURITY', color: 'green' },
+    { id: 'research', label: '10 RESEARCH', color: 'yellow' },
+    { id: 'verification', label: '11 VERIFICATION', color: 'teal' },
+    { id: 'infra', label: '12 INFRASTRUCTURE', color: 'pink' },
+    { id: 'testing', label: '13 TESTING', color: 'indigo' },
   ];
 
   return (
-    <aside className="flex flex-col h-full gap-1">
-      <div className="lcars-elbow-top-left" />
-      <div className="flex-1 flex flex-col gap-1 overflow-y-auto pr-2 custom-scrollbar">
-        {menuItems.map(item => (
-          <button
-            key={item.id}
-            onClick={() => onTabChange(item.id)}
-            className={`lcars-button ${item.color} ${activeTab === item.id ? 'active' : ''}`}
-            style={{
-              justifyContent: 'flex-end',
-              textAlign: 'right',
-              paddingRight: '15px',
-              borderRight: activeTab === item.id ? '10px solid white' : 'none',
-              height: '35px',
-              fontSize: '11px'
-            }}
-          >
-            {item.label}
-          </button>
-        ))}
-
-        <div className="flex-1" />
-
-        {/* Resource Telemetry */}
-        <div className="lcars-stat-box p-4" style={{ background: '#0a0a0a', borderLeft: '6px solid var(--lcars-blue)', marginBottom: '10px' }}>
-          <div className="lcars-stat-label" style={{ color: 'var(--lcars-blue)' }}>ARBITER_VRAM</div>
-          <div className="lcars-stat-value" style={{ fontSize: '14px' }}>{stats?.resources?.current_usage_gb || 0} / {stats?.resources?.vram_budget_gb || 0} GB</div>
-          <div className="w-full bg-blue-900/20 h-1.5 mt-2 rounded-full overflow-hidden">
-            <motion.div animate={{ width: `${stats?.resources?.utilization_pct || 0}%` }} className="bg-blue-400 h-full" />
-          </div>
-          <div className="text-[8px] opacity-30 mt-1 uppercase tracking-widest">{stats?.resources?.utilization_pct || 0}% UTILIZATION</div>
-        </div>
-      </div>
-      <div className="lcars-elbow-bottom-left" />
+    <aside className="sidebar">
+      {menuItems.map(item => (
+        <button
+          key={item.id}
+          onClick={() => onTabChange(item.id)}
+          className={`sidebar-button ${activeTab === item.id ? 'active' : ''}`}>
+          {item.label}
+        </button>
+      ))}
     </aside>
   );
 };
@@ -76,6 +57,8 @@ export default function App() {
   const [artifacts, setArtifacts] = useState([]);
   const [artStats, setArtStats] = useState({});
   const [selectedArtifact, setSelectedArtifact] = useState(null);
+  const [orchestratorStats, setOrchestratorStats] = useState({ active_tasks: 0, status: 'offline' });
+  const [agentMetrics, setAgentMetrics] = useState({});
   const [resources, setResources] = useState(null);
   const [meshTopology, setMeshTopology] = useState({ nodes: [], connections: [], alive: 0 });
   const [selectedNode, setSelectedNode] = useState(null);
@@ -93,35 +76,121 @@ export default function App() {
   const [isRouting, setIsRouting] = useState(false);
   const [meshRouteResult, setMeshRouteResult] = useState(null);
 
+  const [federationData, setFederationData] = useState({ stats: null, peers: [] });
+  const [securityData, setSecurityData] = useState({ stats: null, threats: [] });
+  const [researchData, setResearchData] = useState({ stats: null, tasks: [] });
+  const [verificationData, setVerificationData] = useState({ stats: null, queue: [] });
+  const [infraData, setInfraData] = useState({ status: null, nodes: [] });
+  const [testingData, setTestingData] = useState({ stats: null, runs: [] });
+  const [overview, setOverview] = useState({});
+
   const chatEndRef = useRef(null);
 
   // Sync Logic
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [expRes, artRes, resRes, meshRes, learnRes, memRes] = await Promise.all([
-          axios.get(`${API_BASE}/swarm/experts`),
-          axios.get(`${API_BASE}/artifacts`),
-          axios.get(`${API_BASE}/system/resources`),
-          axios.get(`${API_BASE}/mesh/topology`),
-          axios.get(`${API_BASE}/learning/skills`),
-          axios.get(`${API_BASE}/memory/stats`)
-        ]);
-        setExperts(expRes.data);
-        if (expRes.data.length > 0 && !selectedRole) setSelectedRole(expRes.data[0].role);
-        setArtifacts(artRes.data.artifacts);
-        setArtStats(artRes.data.stats);
-        setResources(resRes.data);
-        setMeshTopology(meshRes.data);
-        setLearnedSkills(learnRes.data.skills || []);
-        setMemStats(memRes.data);
+        const endpoints = [
+          { key: 'experts', url: '/swarm/experts' },
+          { key: 'artifacts', url: '/artifacts' },
+          { key: 'resources', url: '/system/resources' },
+          { key: 'mesh', url: '/mesh/topology' },
+          { key: 'skills', url: '/learning/skills' },
+          { key: 'memory', url: '/memory/stats' },
+          { key: 'telemetry', url: '/swarm/telemetry' },
+        ];
+
+        const dataPromises = endpoints.map(e => fetch(`${API_BASE}${e.url}`).then(res => res.json()));
+        const [expertsData, artifactsData, resourcesData, meshData, skillsData, memData, telemetryData] = await Promise.all(dataPromises);
+
+        setExperts(expertsData);
+        if (expertsData.length > 0 && !selectedRole) setSelectedRole(expertsData[0].role);
+        
+        // Fetch artifacts with content preview for display
+        const artRes = await fetch(`${API_BASE}/artifacts?include_content=true`);
+        const artData = await artRes.json();
+        setArtifacts(artData.artifacts || []);
+        setArtStats(artifactsData.stats);
+        setResources(resourcesData);
+        setMeshTopology(meshData);
+        setLearnedSkills(skillsData.skills || []);
+        setMemStats(memData);
+        setOverview(telemetryData);
+
       } catch (err) { console.error("Sync Error", err); }
     };
 
-    fetchData();
-    const interval = setInterval(fetchData, 3000);
+    const fetchTabData = async (tab) => {
+      try {
+        if (tab === 'federation') {
+          const [statsRes, peersRes] = await Promise.all([
+            fetch(`${API_BASE}/federation/stats`).then(res => res.json()),
+            fetch(`${API_BASE}/federation/peers`).then(res => res.json())
+          ]);
+          setFederationData({ stats: statsRes, peers: peersRes.peers || [] });
+        } else if (tab === 'security') {
+          const [statsRes, threatsRes] = await Promise.all([
+            fetch(`${API_BASE}/security/stats`).then(res => res.json()),
+            fetch(`${API_BASE}/security/threats`).then(res => res.json())
+          ]);
+          setSecurityData({ stats: statsRes, threats: threatsRes.threats || [] });
+        } else if (tab === 'research') {
+          const [statsRes, tasksRes] = await Promise.all([
+            fetch(`${API_BASE}/research/stats`).then(res => res.json()),
+            fetch(`${API_BASE}/research/tasks`).then(res => res.json())
+          ]);
+          setResearchData({ stats: statsRes, tasks: tasksRes.tasks || [] });
+        } else if (tab === 'verification') {
+          const [statsRes, queueRes] = await Promise.all([
+            fetch(`${API_BASE}/verification/stats`).then(res => res.json()),
+            fetch(`${API_BASE}/verification/queue`).then(res => res.json())
+          ]);
+          setVerificationData({ stats: statsRes, queue: queueRes.queue || [] });
+        } else if (tab === 'infra') {
+          const [statusRes, nodesRes] = await Promise.all([
+            fetch(`${API_BASE}/infrastructure/status`).then(res => res.json()),
+            fetch(`${API_BASE}/infrastructure/nodes`).then(res => res.json())
+          ]);
+          setInfraData({ status: statusRes, nodes: nodesRes.nodes || [] });
+        } else if (tab === 'testing') {
+          const [statsRes, runsRes] = await Promise.all([
+            fetch(`${API_BASE}/testing/stats`).then(res => res.json()),
+            fetch(`${API_BASE}/testing/runs`).then(res => res.json())
+          ]);
+          setTestingData({ stats: statsRes, runs: runsRes.runs || [] });
+        }
+      } catch (error) {
+        console.error(`Error fetching data for tab ${tab}:`, error);
+      }
+    };
+
+    const fetchSystemData = async () => {
+      try {
+        const [resArr, infraArr, testArr, orchArr] = await Promise.all([
+          axios.get('http://localhost:8001/artifacts'),
+          axios.get('http://localhost:8001/infrastructure/status'),
+          axios.get('http://localhost:8001/testing/stats'),
+          axios.get('http://localhost:8001/swarm/orchestrator/stats')
+        ]);
+        setArtifacts(resArr.data.artifacts || []);
+        setInfraData(prev => ({ ...prev, status: infraArr.data || {} })); // Adjusted to use setInfraData
+        setTestingData(prev => ({ ...prev, stats: testArr.data || {} })); // Adjusted to use setTestingData
+        setOrchestratorStats(orchArr.data || { active_tasks: 0, status: 'offline' });
+      } catch (err) {
+        console.error('Core data fetch error:', err);
+      }
+    };
+
+    fetchData(); // Initial global fetch
+    fetchTabData(activeTab); // Initial fetch for the active tab
+    fetchSystemData(); // Call the new system data fetch
+
+    const interval = setInterval(() => {
+      fetchData();
+      fetchSystemData(); // Also fetch system data on interval
+    }, 3000);
     return () => clearInterval(interval);
-  }, [selectedRole]);
+  }, [selectedRole, activeTab]);
 
   useEffect(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), [messages, selectedRole]);
 
@@ -132,9 +201,21 @@ export default function App() {
     setInputMsg('');
     setIsProcessing(true);
     try {
-      const res = await axios.post(`${API_BASE}/swarm/chat`, { role, message: inputMsg });
-      setMessages(prev => ({ ...prev, [role]: [...(prev[role] || []), { text: res.data.response, sender: 'agent', name: res.data.name, time: new Date().toLocaleTimeString() }] }));
-    } catch {
+      console.log('Sending message:', { role, message: inputMsg, sender: 'user' });
+      const res = await axios.post(`${API_BASE}/swarm/chat`, { role, message: inputMsg, sender: 'user' });
+      console.log('Received response:', res.data);
+      setMessages(prev => ({
+        ...prev,
+        [role]: [...(prev[role] || []), {
+          text: res.data.response,
+          sender: 'agent',
+          name: res.data.name,
+          reasoning_trace: res.data.reasoning_trace,
+          time: new Date().toLocaleTimeString()
+        }]
+      }));
+    } catch (err) {
+      console.error('Chat Error:', err);
       setMessages(prev => ({ ...prev, [role]: [...(prev[role] || []), { text: '⚠️ [NEURAL_LINK_STALLED]', sender: 'system' }] }));
     } finally { setIsProcessing(false); }
   };
@@ -168,131 +249,306 @@ export default function App() {
   };
 
   return (
-    <div className="lcars-container">
-
-      {/* ─── LCARS TOP NAVIGATION ─── */}
-      <div className="lcars-bar" style={{ gridColumn: '2 / span 1', height: '60px', borderRadius: '0 30px 30px 0', marginLeft: '-10px', background: 'var(--lcars-orange)' }}>
-        <div className="flex justify-between items-center w-full px-10 h-full">
-          <div className="flex items-center gap-6">
-            <span style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '2px', fontFamily: 'Orbitron' }}>SWARM CORE</span>
-            <span className="opacity-60 text-[12px] font-black italic">TRM_PHASE_4_STABLE</span>
-          </div>
-          <div className="flex gap-4 items-center">
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] uppercase font-bold text-black/60">Logic Sync</span>
-              <span className="text-black font-black">99.98%</span>
-            </div>
-            <div className="w-16 h-10 bg-black flex items-center justify-center text-orange-400 font-bold border-2 border-orange-500 rounded-sm">
-              {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── SIDEBAR ─── */}
-      <LCARS_Sidebar activeTab={activeTab} onTabChange={setActiveTab} stats={{ resources, artifacts, memoryStats }} />
-
-      {/* ─── MAIN CANVAS ─── */}
-      <main className="flex-1 overflow-y-auto bg-black p-6 custom-scrollbar" style={{ gridColumn: '2 / span 1', gridRow: '2 / span 1' }}>
+    <div className="container">
+      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} stats={{ resources, artifacts, memoryStats }} />
+      <main className="main-content">
         <AnimatePresence mode="wait">
 
           {/* 01 SYSTEM STATUS */}
           {activeTab === 'overview' && (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
-              <div className="lcars-panel-title">01 DYNAMIC_TELEMETRY</div>
-              <div className="grid grid-cols-4 gap-2">
-                {[
-                  { label: 'ALIVE NODES', value: meshTopology.alive, color: 'var(--lcars-orange)' },
-                  { label: 'MEM_UNITS', value: memoryStats.total_memories, color: 'var(--lcars-blue)' },
-                  { label: 'ARTIFACTS', value: artifacts.length, color: 'var(--lcars-purple)' },
-                  { label: 'PENDING_REV', value: artStats.pending, color: 'var(--lcars-gold)' }
-                ].map(s => (
-                  <div key={s.label} className="lcars-stat-box" style={{ borderLeft: `4px solid ${s.color}` }}>
-                    <div className="lcars-stat-label" style={{ color: s.color }}>{s.label}</div>
-                    <div className="lcars-stat-value">{s.value || 0}</div>
-                  </div>
-                ))}
+              <h1 className="section-title">Emergence Telemetry</h1>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="stat-card">
+                  <div className="stat-card-label">Overall Status</div>
+                  <div className={`stat-card-value text-lg ${overview?.status === 'Stable' ? 'text-accent-success' : 'text-accent-warning'}`}>{overview?.status || '...'}</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-card-label">Mesh Coherence</div>
+                  <div className="stat-card-value text-lg">{(overview?.mesh_coherence * 100)?.toFixed(0) || 0}%</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-card-label">Harmony Index</div>
+                  <div className="stat-card-value text-lg">{overview?.harmony_index?.toFixed(2) || 0}</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-card-label">Active Proposals</div>
+                  <div className="stat-card-value text-lg">{overview?.active_proposals || 0}</div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6 flex-1">
-                <section className="flex flex-col bg-white-5 border-white-5">
-                  <div className="flex justify-between items-center mb-6">
-                    <span className="text-[12px] font-black text-orange-400">NEURAL_PERSONAS</span>
-                    <Users size={16} className="text-orange-400" />
+              <div className="panel-grid panel-grid-3-col">
+                {/* Column 1: System & Resources */}
+                <div className="col-span-1 flex flex-col gap-4">
+                  <div className="panel">
+                    <div className="panel-header">
+                      <h2 className="panel-title">System Resources</h2>
+                      <Cpu className="panel-icon" size={18} />
+                    </div>
+                    <div className="panel-body space-y-3">
+                      <div>
+                        <div className="flex justify-between text-sm mb-1"><span>CPU Usage</span><span>{overview?.system?.cpu_percent?.toFixed(1) || 0}%</span></div>
+                        <div className="w-full bg-background-primary rounded-full h-2.5"><div className="bg-accent-primary h-2.5 rounded-full" style={{ width: `${overview?.system?.cpu_percent || 0}%` }}></div></div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-sm mb-1"><span>Memory Usage</span><span>{overview?.system?.memory_percent?.toFixed(1) || 0}%</span></div>
+                        <div className="w-full bg-background-primary rounded-full h-2.5"><div className="bg-accent-primary h-2.5 rounded-full" style={{ width: `${overview?.system?.memory_percent || 0}%` }}></div></div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
-                    {experts.map(e => (
-                      <div key={e.role} className="p-4 bg-black/40 border-l-8 flex items-center justify-between" style={{ borderColor: e.avatar_color }}>
-                        <div>
-                          <div className="text-sm font-black text-white">{e.name}</div>
-                          <div className="text-[10px] opacity-30 uppercase tracking-[2px]">{e.role}</div>
+                  <div className="panel">
+                    <div className="panel-header">
+                      <h2 className="panel-title">Resource Arbiter (VRAM)</h2>
+                      <Database className="panel-icon" size={18} />
+                    </div>
+                    <div className="panel-body space-y-2">
+                      <div className="flex justify-between text-sm"><span>Total:</span><span>{overview?.resource_arbiter?.total_gb?.toFixed(2) || 0} GB</span></div>
+                      <div className="flex justify-between text-sm"><span>Allocated:</span><span>{overview?.resource_arbiter?.allocated_gb?.toFixed(2) || 0} GB</span></div>
+                      <div className="flex justify-between text-sm"><span>Available:</span><span>{overview?.resource_arbiter?.available_gb?.toFixed(2) || 0} GB</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Column 2: Distributed Stacks */}
+                <div className="col-span-1 panel">
+                  <div className="panel-header">
+                    <h2 className="panel-title">Distributed Stacks</h2>
+                    <Layers className="panel-icon" size={18} />
+                  </div>
+                  <div className="panel-body space-y-2">
+                    {overview?.distributed_stacks && Object.entries(overview.distributed_stacks).map(([stack, data]) => (
+                      <div key={stack} className="card-secondary">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold capitalize">{stack.replace('_', ' ')}</span>
+                          <div className={`tag ${data.status === 'Healthy' ? 'tag-success' : 'tag-warning'}`}>{data.status}</div>
                         </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="text-[9px] px-2 py-0.5 bg-white-5 rounded-full text-white/40 border border-white-5 uppercase font-bold">Lvl 4 SYNC</span>
-                          <div className="flex gap-1">{e.specialties.slice(0, 2).map(s => <div key={s} className="w-1 h-1 rounded-full bg-white/30" />)}</div>
-                        </div>
+                        <div className="text-xs text-text-secondary mt-1">Load: {data.load}% | Agents: {data.agents}</div>
                       </div>
                     ))}
                   </div>
-                </section>
+                </div>
 
-                <section className="flex flex-col bg-white-5 border-white-5">
-                  <div className="flex justify-between items-center mb-6">
-                    <span className="text-[12px] font-black text-blue-400">REALTIME_CONSCIOUSNESS_LOG</span>
-                    <Activity size={16} className="text-blue-400" />
+                <div className="col-span-1 panel">
+                  <div className="panel-header">
+                    <h2 className="panel-title">Active Superpositions</h2>
+                    <GitMerge className="panel-icon" size={18} />
                   </div>
-                  <div className="flex-1 bg-black/60 p-4 font-mono text-[10px] overflow-y-auto space-y-3 leading-relaxed border border-white/5 custom-scrollbar">
-                    <div className="text-orange-500/80"><span className="opacity-30">[{new Date().toLocaleTimeString()}]</span> AUDIT: Scanning pipeline artifacts for security policy.</div>
-                    <div className="text-blue-400/80"><span className="opacity-30">[{new Date().toLocaleTimeString()}]</span> MESH: Heartbeat response from 12 sub-agents received.</div>
-                    <div className="text-green-500/80 animate-pulse"><span className="opacity-30">[{new Date().toLocaleTimeString()}]</span> SYNC: Memory clusters optimized. 1.2GB VRAM reclaimed.</div>
-                    <div className="text-purple-400/80"><span className="opacity-30">[{new Date().toLocaleTimeString()}]</span> NEURAL: Specialist 'Architect' processing code manifest.</div>
+                  <div className="panel-body space-y-2">
+                    {overview?.superpositions?.map((sup) => (
+                      <div key={sup.id || sup.protocol + sup.agents.join('')} className="card-secondary">
+                        <div className="font-bold text-sm">{sup.protocol}</div>
+                        <div className="text-xs text-text-secondary mt-1">Agents: {sup.agents.join(', ')}</div>
+                        <div className="text-xs text-text-secondary">State: {sup.state}</div>
+                      </div>
+                    ))}
                   </div>
-                </section>
+                </div>
               </div>
             </motion.div>
           )}
 
           {/* 02 NEURAL BRIDGE */}
           {activeTab === 'chat' && (
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-4">
-              <div className="lcars-panel-title" style={{ borderColor: 'var(--lcars-purple)', color: 'var(--lcars-purple)' }}>02 NEURAL_SYNC_PROTOCOL</div>
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full chat-container-layout">
+              <div className="flex items-center justify-between mb-2">
+                <h1 className="section-title">Neural Bridge // Swarm Comm</h1>
+                <div className="flex items-center gap-4">
+                  <div className="tag tag-success flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent-success animate-pulse" />
+                    <span>Synchronized</span>
+                  </div>
+                  <div className="text-xs text-text-secondary font-mono">Channel: DIRECT_ENCRYPTED</div>
+                </div>
+              </div>
 
-              <div className="flex gap-1 bg-white-5 p-1 rounded-sm">
+              <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2 custom-scrollbar no-scrollbar scroll-smooth">
                 {experts.map(e => (
                   <button key={e.role} onClick={() => setSelectedRole(e.role)}
-                    className={`lcars-button flex-1 min-w-[140px] ${selectedRole === e.role ? 'purple' : 'tan'}`}
-                    style={{ height: '30px', opacity: selectedRole === e.role ? 1 : 0.4, transition: 'all 0.3s' }}>
-                    {e.name}
+                    className={`expert-chip ${selectedRole === e.role ? 'active' : ''}`}>
+                    <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: e.avatar_color }} />
+                    <div className="flex flex-col items-start leading-none gap-0.5">
+                      <span className="text-xs font-bold">{e.name}</span>
+                      <span className="text-[9px] opacity-60 uppercase">{e.role}</span>
+                    </div>
                   </button>
                 ))}
               </div>
 
-              <div className="flex-1 bg-black border border-white-5 flex flex-col overflow-hidden relative shadow-2xl">
-                <div className="p-4 bg-white/[0.02] border-b border-white-5 flex justify-between items-center">
-                  <span className="text-[11px] font-black text-purple-300 tracking-[3px]">COMM_LINK // {selectedRole?.toUpperCase()}</span>
-                  <div className="flex gap-4 items-center">
-                    <span className="text-[8px] font-bold text-green-500 animate-pulse uppercase">Bi-Directional Established</span>
-                    <div className="w-2 h-2 rounded-full bg-purple-500" />
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
+                {/* Main Chat Area */}
+                <div className="lg:col-span-8 flex flex-col min-h-0 h-full">
+                  <div className="panel flex-1 flex flex-col min-h-0 bg-background-primary/30 backdrop-blur-md border-white/5 shadow-2xl">
+                    <div className="panel-header border-b border-white/5 py-3 px-4 flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        {experts.find(e => e.role === selectedRole) && (
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-inner"
+                            style={{ backgroundColor: experts.find(e => e.role === selectedRole).avatar_color }}>
+                            {experts.find(e => e.role === selectedRole).name.charAt(0)}
+                          </div>
+                        )}
+                        <div>
+                          <h2 className="panel-title text-sm">{selectedRole?.toUpperCase()}</h2>
+                          <div className="text-[10px] text-accent-success font-mono">REALTIME COGNITION STREAM</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button className="p-1.5 rounded-md hover:bg-white/10 text-text-secondary transition-colors" title="Export Log">
+                          <FileText size={16} />
+                        </button>
+                        <button className="p-1.5 rounded-md hover:bg-white/10 text-text-secondary transition-colors" title="Clear Buffer">
+                          <XCircle size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="panel-body flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 flex flex-col">
+                      {(messages[selectedRole] || []).length === 0 && !isProcessing && (
+                        <div className="flex-1 flex flex-col items-center justify-center text-center opacity-30 select-none">
+                          <MessageSquare size={64} className="mb-4 text-accent-primary" />
+                          <p className="text-lg font-mono">SECURE BRIDGE ESTABLISHED</p>
+                          <p className="text-xs font-mono max-w-[200px]">Waiting for operator input to begin neural transfer.</p>
+                        </div>
+                      )}
+
+                      {(messages[selectedRole] || []).map((msg, i) => (
+                        <div key={`${selectedRole}-${i}-${msg.time}`} className={`chat-message-row ${msg.sender === 'user' ? 'user' : 'agent'}`}>
+                          {msg.sender === 'agent' && (
+                            <div className="w-8 h-8 rounded-lg flex-shrink-0 mt-1 flex items-center justify-center text-white text-xs font-bold"
+                              style={{ backgroundColor: experts.find(e => e.role === selectedRole)?.avatar_color || '#555' }}>
+                              {msg.name?.charAt(0) || 'A'}
+                            </div>
+                          )}
+                          <div className="message-bubble-group">
+                            <div className="message-bubble">
+                              <div className="message-text">{msg.text}</div>
+                              {msg.reasoning_trace && (
+                                <div className="reasoning-indicator mt-3 pt-3 border-t border-white/10">
+                                  <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-tighter text-accent-primary mb-1">
+                                    <Zap size={10} />
+                                    <span>TRM Logic Trace</span>
+                                  </div>
+                                  <div className="font-mono text-[10px] bg-black/40 p-2 rounded border border-white/5 text-accent-primary/80 overflow-x-auto no-scrollbar">
+                                    {msg.reasoning_trace}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="message-meta">
+                              {msg.sender === 'user' ? 'OPERATOR' : (msg.name || 'SWARM_AGENT')} // {msg.time}
+                            </div>
+                          </div>
+                          {msg.sender === 'user' && (
+                            <div className="w-8 h-8 rounded-lg flex-shrink-0 mt-1 flex items-center justify-center bg-accent-primary text-white text-xs font-bold">
+                              OP
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {isProcessing && (
+                        <div className="chat-message-row agent items-center">
+                          <div className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center bg-accent-primary/20 animate-pulse">
+                            <Loader2 className="animate-spin text-accent-primary" size={14} />
+                          </div>
+                          <div className="flex flex-col gap-1 ml-3">
+                            <div className="flex gap-1">
+                              <span className="w-1.5 h-1.5 rounded-full bg-accent-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                              <span className="w-1.5 h-1.5 rounded-full bg-accent-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                              <span className="w-1.5 h-1.5 rounded-full bg-accent-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </div>
+                            <div className="text-[10px] font-mono text-accent-primary/60 uppercase tracking-widest">Cognitive Processing</div>
+                          </div>
+                        </div>
+                      )}
+                      <div ref={chatEndRef} />
+                    </div>
+
+                    <div className="panel-footer border-t border-white/5 p-4 bg-background-primary/50">
+                      <div className="relative group">
+                        <input
+                          value={inputMsg}
+                          onChange={e => setInputMsg(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && sendMessage()}
+                          placeholder="Transmit neural command to the swarm..."
+                          className="chat-input-field"
+                        />
+                        <button onClick={sendMessage} className="chat-send-button" disabled={!inputMsg.trim() || isProcessing}>
+                          {isProcessing ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+                        </button>
+                      </div>
+                      <div className="flex justify-between items-center mt-3 px-1">
+                        <div className="flex gap-2">
+                          <div className="text-[9px] text-text-secondary uppercase">Status: <span className="text-accent-success">Ready</span></div>
+                          <div className="text-[9px] text-text-secondary uppercase">Buffer: <span className="text-accent-primary">{messages[selectedRole]?.length || 0} msgs</span></div>
+                        </div>
+                        <div className="text-[9px] text-text-secondary font-mono">SWARM_V2_ENCRYPTION_AES256</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-10 space-y-8 custom-scrollbar">
-                  {(messages[selectedRole] || []).map((msg, i) => (
-                    <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[70%] p-6 rounded-sm text-sm leading-relaxed border ${msg.sender === 'user' ? 'bg-blue-600/10 border-r-8 border-blue-500 text-blue-50' : 'bg-purple-900/10 border-l-8 border-purple-500 text-purple-50 shadow-[0_0_20px_rgba(204,153,204,0.1)]'}`}>
-                        {msg.text}
-                        <div className="mt-4 text-[8px] opacity-30 font-bold uppercase tracking-widest">{msg.time} // {msg.sender === 'agent' ? msg.name : 'USER_COMMAND'}</div>
+                {/* Neural Reasoning Sidebar */}
+                <div className="lg:col-span-4 flex flex-col h-full min-h-0">
+                  <div className="panel flex-1 flex flex-col min-h-0 border-white/5 bg-background-primary/20 backdrop-blur-sm">
+                    <div className="panel-header border-b border-white/5 py-3 px-4">
+                      <h2 className="panel-title text-xs flex items-center gap-2">
+                        <Brain size={14} className="text-accent-primary" />
+                        <span>NEURAL REASONING ENGINE</span>
+                      </h2>
+                    </div>
+                    <div className="panel-body flex-1 overflow-y-auto custom-scrollbar p-4 space-y-4">
+                      <div className="reasoning-card active">
+                        <div className="reasoning-card-header">
+                          <div className="flex items-center gap-2">
+                            <Activity size={12} />
+                            <span>Executive Thread</span>
+                          </div>
+                          <div className="tag tag-success text-[8px]">ONLINE</div>
+                        </div>
+                        <div className="reasoning-card-body">
+                          <p className="text-xs text-text-secondary leading-relaxed">
+                            Monitoring active cognition for <span className="text-accent-primary font-bold">@{selectedRole}</span>.
+                            The Reasoning core (TRM) is analyzed per turn to ensure objective alignment.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="system-feed">
+                        <div className="system-feed-header">SYSTEM_ACTIVITY_FEED</div>
+                        <div className="system-feed-body">
+                          {(messages[selectedRole] || []).slice(-5).map((m, idx) => (
+                            <div key={idx} className="feed-item">
+                              <span className="feed-time">[{m.time.split(' ')[0]}]</span>
+                              <span className={`feed-sender ${m.sender === 'user' ? 'text-accent-primary' : 'text-accent-success'}`}>
+                                {m.sender.toUpperCase()}
+                              </span>
+                              <span className="feed-action">
+                                {m.sender === 'user' ? 'TRX_SENT' : 'COGNITION_RTX'}
+                              </span>
+                            </div>
+                          ))}
+                          {isProcessing && (
+                            <div className="feed-item active">
+                              <span className="feed-time font-mono">[{new Date().toLocaleTimeString().split(' ')[0]}]</span>
+                              <span className="text-accent-warning">PROCESS</span>
+                              <span className="animate-pulse">_REASONING_CORE_...</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="trace-legend">
+                        <div className="system-feed-header">TRM_NODE_LEGEND</div>
+                        <div className="grid grid-cols-2 gap-1 px-2 pt-2">
+                          <div className="text-[8px] font-mono text-text-secondary">SYN: Synthesis</div>
+                          <div className="text-[8px] font-mono text-text-secondary">ANA: Analysis</div>
+                          <div className="text-[8px] font-mono text-text-secondary">VAL: Validation</div>
+                          <div className="text-[8px] font-mono text-text-secondary">GEN: Generation</div>
+                          <div className="text-[8px] font-mono text-text-secondary">EXT: Extraction</div>
+                          <div className="text-[8px] font-mono text-text-secondary">FLW: Flow</div>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                  {isProcessing && <div className="text-purple-400 font-black text-[10px] animate-pulse italic uppercase tracking-[5px]">[OPTIMIZING_THOUGHT_VECTORS...]</div>}
-                  <div ref={chatEndRef} />
-                </div>
-
-                <div className="p-8 bg-white/[0.01] border-t border-white-5 flex gap-4">
-                  <input value={inputMsg} onChange={e => setInputMsg(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()}
-                    placeholder="ENTER NEURAL PROTOCOL COMMAND..." className="flex-1 bg-black border-2 border-white-5 p-5 text-sm outline-none focus:border-purple-500 transition-all text-white font-mono" />
-                  <button onClick={sendMessage} className="lcars-button purple w-32 h-16 text-lg">EXECUTE</button>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -301,102 +557,274 @@ export default function App() {
           {/* 03 SWARM INTEL */}
           {activeTab === 'intel' && (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
-              <div className="lcars-panel-title" style={{ borderColor: 'var(--lcars-blue)', color: 'var(--lcars-blue)' }}>03 SHARED_INTEL_RESERVOIR</div>
-
-              <div className="grid grid-cols-12 gap-6 flex-1 overflow-hidden">
-                <aside className="col-span-4 flex flex-col gap-4">
-                  <div className="bg-white-5 p-6 border-l-4 border-blue-500">
-                    <span className="text-[11px] font-black text-blue-400 mb-6 block uppercase">COLLECTIVE_STATS</span>
-                    <div className="space-y-4">
-                      <div className="flex justify-between border-b border-white/5 pb-2">
-                        <span className="text-[10px] uppercase font-bold text-white/40">Total Memories</span>
-                        <span className="text-sm font-black text-white">{memoryStats.total_memories || 0}</span>
+              <h1 className="section-title">Shared Intel Reservoir</h1>
+              <div className="panel-grid panel-grid-3-col">
+                {/* Column 1: Stats & Categories */}
+                <div className="col-span-1 flex flex-col gap-4">
+                  <div className="panel">
+                    <div className="panel-header">
+                      <h2 className="panel-title">Collective Stats</h2>
+                      <Brain className="panel-icon" size={18} />
+                    </div>
+                    <div className="panel-body">
+                      <div className="flex justify-between items-center py-2 border-b border-border-color">
+                        <span className="stat-card-label">Total Memories</span>
+                        <span className="stat-card-value text-lg">{memoryStats.total_memories || 0}</span>
                       </div>
-                      <div className="flex justify-between border-b border-white/5 pb-2">
-                        <span className="text-[10px] uppercase font-bold text-white/40">Sync Events</span>
-                        <span className="text-sm font-black text-white">{memoryStats.sync_events || 0}</span>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="stat-card-label">Sync Events</span>
+                        <span className="stat-card-value text-lg">{memoryStats.sync_events || 0}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="bg-white-5 p-6 flex-1 overflow-y-auto custom-scrollbar">
-                    <span className="text-[10px] font-black text-blue-300 mb-4 block uppercase tracking-widest">TYPE_BREAKDOWN</span>
-                    <div className="grid grid-cols-2 gap-2">
-                      {Object.entries(memoryStats.by_type || {}).map(([type, count]) => (
-                        <div key={type} className="p-3 bg-black flex flex-col items-center border border-white-5">
-                          <div className="text-lg font-black text-blue-400">{count}</div>
-                          <div className="text-[8px] font-bold opacity-30 uppercase">{type}</div>
-                        </div>
-                      ))}
+                  <div className="panel">
+                    <div className="panel-header">
+                      <h2 className="panel-title">Type Breakdown</h2>
+                      <Boxes className="panel-icon" size={18} />
+                    </div>
+                    <div className="panel-body">
+                      <div className="grid grid-cols-2 gap-2">
+                        {Object.entries(memoryStats.by_type || {}).map(([type, count]) => (
+                          <div key={type} className="card-secondary text-center">
+                            <div className="font-bold text-accent-primary text-xl">{count}</div>
+                            <div className="text-xs text-text-secondary uppercase">{type}</div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </aside>
+                </div>
 
-                <section className="col-span-8 flex flex-col gap-4">
-                  <div className="relative">
-                    <input value={memQuery} onChange={e => setMemQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && queryMemory()}
-                      placeholder="QUERY THE COLLECTIVE NEURAL REPOSITORY..." className="w-full bg-black border-4 border-blue-900/30 p-6 pl-14 text-sm font-bold outline-none focus:border-blue-500 transition-all text-white" />
-                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-500" size={24} />
-                    <button onClick={queryMemory} disabled={isQuerying} className="lcars-button blue absolute right-4 top-1/2 -translate-y-1/2 h-8 px-6">
-                      {isQuerying ? <Loader2 className="animate-spin" size={14} /> : 'QUERY'}
-                    </button>
+                {/* Column 2: Query Interface */}
+                <div className="col-span-1 flex flex-col gap-4">
+                  <div className="panel flex-1">
+                    <div className="panel-header">
+                      <h2 className="panel-title">Neural Query</h2>
+                      <FileText className="panel-icon" size={18} />
+                    </div>
+                    <div className="panel-body flex flex-col gap-4">
+                      <textarea
+                        value={memQuery}
+                        onChange={e => setMemQuery(e.target.value)}
+                        placeholder="Search the persistent knowledge bridge..."
+                        className="input-field flex-1"
+                      />
+                    </div>
+                    <div className="panel-footer">
+                      <button onClick={queryMemory} disabled={isQuerying} className="button-primary w-full justify-center">
+                        {isQuerying ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
+                        <span>{isQuerying ? 'Querying...' : 'Execute Query'}</span>
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex-1 bg-white/[0.02] border border-white-5 overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                    {memResults.map((r, i) => (
-                      <div key={i} className="p-6 bg-black border-l-4 border-blue-400 hover:bg-blue-900/5 transition-colors">
-                        <div className="flex justify-between mb-4 border-b border-white/5 pb-2">
-                          <span className="text-[10px] font-black uppercase tracking-[3px] text-blue-400">{r.entry.author} // {r.entry.author_role}</span>
-                          <span className="text-[10px] font-black text-white px-2 py-0.5 bg-blue-600 rounded-full">{((r.score || 0) * 100).toFixed(0)}% MATCH</span>
+                </div>
+
+                {/* Column 3: Results */}
+                <div className="col-span-1 flex flex-col gap-4">
+                  <div className="panel flex-1">
+                    <div className="panel-header">
+                      <h2 className="panel-title">Query Results</h2>
+                      <Sparkles className="panel-icon" size={18} />
+                    </div>
+                    <div className="panel-body space-y-2 overflow-y-auto custom-scrollbar" style={{ maxHeight: '600px' }}>
+                      {memResults.length > 0 ? memResults.map((r, i) => (
+                        <div key={r.id || `${i}-${r.score}`} className="card-secondary">
+                          <div className="flex justify-between items-start">
+                            <p className="text-sm text-text-primary font-mono">{r.entry?.content || r.content || r.memory}</p>
+                            <div className="tag whitespace-nowrap">{((r.score || r.match_percentage || 0) * 100).toFixed(0)}%</div>
+                          </div>
+                          <p className="text-xs text-text-secondary mt-2">Source: {r.entry?.author || r.source || 'Unknown'}</p>
                         </div>
-                        <p className="text-sm leading-relaxed text-gray-300 font-medium">{r.entry.content}</p>
-                        <div className="mt-4 text-[8px] opacity-20 uppercase font-black">{r.entry.memory_type} // {r.entry.created_at}</div>
-                      </div>
-                    ))}
-                    {memResults.length === 0 && <div className="h-full flex items-center justify-center opacity-10 font-black tracking-[10px] uppercase italic text-center text-xl">NEURAL_IDLE...</div>}
+                      )) : (
+                        <div className="text-center py-12 text-text-secondary opacity-40">
+                          <Globe size={48} className="mx-auto mb-4" />
+                          <p>Enter a query to bridge collective intelligence</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </section>
+                </div>
               </div>
             </motion.div>
           )}
 
-          {/* 04 ARTIFACT FLOW */}
+          {/* 04 ARTIFACT FLOW / NEURAL PIPELINE */}
           {activeTab === 'pipeline' && (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
-              <div className="lcars-panel-title" style={{ borderColor: 'var(--lcars-tan)', color: 'var(--lcars-tan)' }}>04 ARTIFACT_EXTRACTION_PIPELINE</div>
-
-              <div className="flex-1 bg-black border-white-5 overflow-hidden flex flex-col">
-                <div className="grid grid-cols-12 p-4 bg-white-5 text-[10px] font-black uppercase tracking-[5px] text-tan border-b border-white-5">
-                  <div className="col-span-5 pl-10">IDENTIFIER</div>
-                  <div className="col-span-2">ORIGIN</div>
-                  <div className="col-span-3">SECURITY_AUDIT</div>
-                  <div className="col-span-2">COMMIT_STATUS</div>
+              <div className="flex justify-between items-end">
+                <div>
+                  <h1 className="section-title mb-1">Autonomous Neural Pipeline</h1>
+                  <p className="text-[10px] text-text-secondary uppercase tracking-widest font-mono">
+                    Monitoring: <span className="text-accent-primary">{orchestratorStats.active_tasks}</span> In-Flight / Registry: <span className="text-accent-primary">{artifacts.length}</span> Entities
+                  </p>
                 </div>
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                  {artifacts.map(art => (
-                    <div key={art.filename} className="grid grid-cols-12 items-center p-6 border-b border-white-5 hover:bg-white-5 transition-colors group cursor-pointer" onClick={() => setSelectedArtifact(art)}>
-                      <div className="col-span-5 flex items-center gap-6 pl-4">
-                        <div className={`p-4 font-black text-lg skew-x-[-15deg] ${art.status === 'integrated' ? 'bg-green-600 text-white' : 'bg-tan text-black'}`}>
-                          {art.filename.charAt(0).toUpperCase()}
+                <div className="pipeline-status-bar gap-6 bg-black/40 border border-white/5">
+                  <div className="flex items-center gap-2">
+                    <Activity size={10} className={orchestratorStats.active_tasks > 0 ? "text-accent-primary animate-pulse" : "text-text-secondary"} />
+                    <span>ORCH_LOOP: <span className={orchestratorStats.status === 'online' ? "text-accent-success" : "text-accent-warning"}>{orchestratorStats.status?.toUpperCase()}</span></span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Brain size={10} className="text-accent-primary" />
+                    <span>SYNAPSE_LOAD: <span className="text-text-primary">{(12.5 * orchestratorStats.active_tasks).toFixed(1)}%</span></span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="neural-pipeline flex-1 min-h-0">
+                {/* Left Column: Adaptive Node List */}
+                <div className="pipeline-node-container custom-scrollbar">
+                  <div className="text-[9px] font-mono text-text-secondary mb-2 uppercase tracking-tighter opacity-50 px-2">_Active_Reasoning_Nodes</div>
+
+                  {artifacts.filter(a => a.status === 'pending').map(a => (
+                    <div
+                      key={a.filename}
+                      onClick={() => setSelectedArtifact(a)}
+                      className={`neural-node ${selectedArtifact?.filename === a.filename ? 'active' : ''}`}
+                    >
+                      {a.status === 'pending' && <div className="node-pulse" />}
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex flex-col">
+                          <span className="font-mono text-[11px] text-text-primary truncate max-w-[180px]">{a.filename}</span>
+                          <span className="text-[9px] text-text-secondary uppercase mt-0.5">Author: <span className="text-accent-primary font-bold">{a.agent || 'SYSTEM'}</span></span>
                         </div>
-                        <div className="truncate">
-                          <div className="text-sm font-black text-white mb-0.5 tracking-tight uppercase">{art.filename}</div>
-                          <div className="text-[9px] opacity-30 font-bold uppercase">{art.size} bytes // {art.created_at?.slice(11, 19)}</div>
+                        <div className="tag text-[8px] px-1">{a.type}</div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-3">
+                        <div className="flex-1 h-1 bg-white/5 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: a.status === 'pending' ? '65%' : '100%' }}
+                            className={`h-full ${a.status === 'pending' ? 'bg-accent-primary animate-pulse' : 'bg-accent-success'}`}
+                          />
                         </div>
+                        <span className="text-[8px] font-mono opacity-60">{a.status === 'pending' ? 'ANALYZING' : 'VERIFIED'}</span>
                       </div>
-                      <div className="col-span-2">
-                        <span className="text-[10px] font-black text-tan uppercase tracking-widest">{art.created_by}</span>
-                      </div>
-                      <div className="col-span-3">
-                        {art.security_status ? (
-                          <span className={`text-[10px] font-black px-3 py-1 flex items-center gap-2 border w-fit ${art.security_status === 'safe' ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'bg-red-500/20 border-red-500/40 text-red-500 animate-pulse'}`}>
-                            <Shield size={12} /> {art.security_status.toUpperCase()}
-                          </span>
-                        ) : <span className="text-[9px] font-black opacity-20 uppercase italic">SCANNING_IN_PROGRESS...</span>}
-                      </div>
-                      <div className="col-span-2">
-                        <span className={`text-[10px] font-black px-4 py-1 skew-x-[-15deg] uppercase ${art.status === 'integrated' ? 'bg-blue-600 text-white' : 'bg-white-5 text-gray-400'}`}>{art.status}</span>
+                      <div className="reasoning-badge">
+                        <Zap size={8} className="inline mr-1" />
+                        TRACE: [SYN-&gt;ANA-&gt;VAL-&gt;GEN]
                       </div>
                     </div>
                   ))}
+
+                  {artifacts.filter(a => a.status === 'pending').length === 0 && (
+                    <div className="text-center py-12 border border-dashed border-white/5 rounded-xl opacity-30">
+                      <div className="font-mono text-[10px]">NO_PENDING_SYNAPSES</div>
+                    </div>
+                  )}
+
+                  <div className="text-[9px] font-mono text-text-secondary mt-6 mb-2 uppercase tracking-tighter opacity-50 px-2">_Integrated_Knowledge</div>
+                  <div className="space-y-1 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                    {artifacts.filter(a => a.status !== 'pending').map(a => (
+                      <div
+                        key={a.filename}
+                        onClick={() => setSelectedArtifact(a)}
+                        className={`neural-node py-2 ${selectedArtifact?.filename === a.filename ? 'active bg-white/5' : 'opacity-60 hover:opacity-100'}`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-mono text-[9px] truncate max-w-[200px]">{a.filename}</span>
+                          <div className={`tag text-[6px] px-1 py-0 ${a.status === 'approved' ? 'tag-success' : a.status === 'rejected' ? 'tag-danger' : 'tag-info'}`}>{a.status.toUpperCase()}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* ─── Global Reasoning Overview ─── */}
+                  <div className="mt-8 p-4 bg-accent-primary/5 border border-accent-primary/10 rounded-xl">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Cpu size={14} className="text-accent-primary" />
+                      <h3 className="text-[10px] font-mono font-bold tracking-wider text-accent-primary">ORCHESTRATOR_GLOBAL_REASONING</h3>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center text-[9px] font-mono">
+                        <span className="text-text-secondary uppercase">Active Proposals</span>
+                        <span className="text-accent-primary">{orchestratorStats.triggered_proposals_count || 0}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-[9px] font-mono">
+                        <span className="text-text-secondary uppercase">Internal State</span>
+                        <span className={`px-2 rounded-full ${orchestratorStats.status === 'online' ? 'bg-accent-success/20 text-accent-success' : 'bg-accent-warning/20 text-accent-warning'}`}>
+                          {orchestratorStats.status?.toUpperCase() || 'BUSY'}
+                        </span>
+                      </div>
+
+                      {orchestratorStats.recent_proposals?.length > 0 && (
+                        <div className="pt-2 border-t border-white/5">
+                          <p className="text-[8px] text-text-secondary uppercase mb-2">Recent Brain Projections:</p>
+                          <div className="space-y-1">
+                            {orchestratorStats.recent_proposals.map(p => (
+                              <div key={p} className="flex items-center gap-2 text-[8px] font-mono text-text-primary/70">
+                                <ChevronRight size={8} className="text-accent-primary" />
+                                <span className="truncate">{p}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Deep Inspection */}
+                <div className="pipeline-detail-container">
+                  {selectedArtifact ? (
+                    <div className="panel flex-1 flex flex-col min-h-0 bg-background-primary/30 border-accent-primary/20 backdrop-blur-md">
+                      <div className="panel-header border-b border-white/5">
+                        <div className="flex flex-col">
+                          <h2 className="panel-title font-mono text-accent-primary">{selectedArtifact.filename}</h2>
+                          <div className="text-[9px] font-mono text-text-secondary">UUID: {selectedArtifact.id || 'N/A'} // ORIGIN: {selectedArtifact.agent}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className={`tag ${selectedArtifact.status === 'pending' ? 'tag-warning' : 'tag-success'}`}>
+                            {selectedArtifact.status.toUpperCase()}
+                          </div>
+                          <button onClick={() => setSelectedArtifact(null)} className="p-1 hover:bg-white/5 rounded">
+                            <X size={16} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="panel-body flex-1 bg-black/40 font-mono text-[11px] overflow-auto custom-scrollbar p-0">
+                        <div className="sticky top-0 right-0 p-2 z-10 flex justify-end">
+                          <div className="px-2 py-1 bg-accent-primary/10 border border-accent-primary/20 text-[9px] text-accent-primary rounded">
+                            LANGUAGE: {selectedArtifact.type?.toUpperCase() || 'UNKNOWN'}
+                          </div>
+                        </div>
+                        <pre className="p-4 leading-relaxed"><code className="text-text-primary/90">{selectedArtifact.content}</code></pre>
+                      </div>
+
+                      <div className="panel-footer border-t border-white/5 p-4 flex gap-3">
+                        <button
+                          onClick={() => handleArtifactAction(selectedArtifact.filename, 'reject')}
+                          className="flex-1 py-2 px-4 bg-accent-danger/10 border border-accent-danger/30 text-accent-danger text-[10px] font-bold uppercase rounded-lg hover:bg-accent-danger hover:text-white transition-all flex items-center justify-center gap-2"
+                        >
+                          <Ban size={14} /><span>Terminate & Reject</span>
+                        </button>
+
+                        <div className="w-px h-8 bg-white/5 mx-2" />
+
+                        <button
+                          onClick={() => handleArtifactAction(selectedArtifact.filename, 'test')}
+                          className="flex-1 py-2 px-4 bg-white/5 border border-white/10 text-white text-[10px] font-bold uppercase rounded-lg hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                        >
+                          <Beaker size={14} /><span>Neural Audit</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleArtifactAction(selectedArtifact.filename, 'approve')}
+                          className="flex-1 py-2 px-4 bg-accent-success/10 border border-accent-success/30 text-accent-success text-[10px] font-bold uppercase rounded-lg hover:bg-accent-success hover:text-white transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(34,197,94,0.1)]"
+                        >
+                          <Check size={14} /><span>Verify & Commit</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex-1 rounded-2xl border border-dashed border-white/5 flex items-center justify-center relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-gradient-to-br from-accent-primary/5 to-transparent pointer-events-none" />
+                      <div className="text-center z-10">
+                        <Package size={48} className="mx-auto mb-4 text-accent-primary/30 group-hover:scale-110 transition-transform duration-500" />
+                        <h3 className="text-sm font-mono font-bold tracking-widest text-text-primary/60">NEURAL_IDLE_STATE</h3>
+                        <p className="text-[10px] font-mono text-text-secondary mt-1">SELECT_ACTIVE_NODE_FOR_INSPECTION</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -405,348 +833,455 @@ export default function App() {
           {/* 05 SKILL REGISTRY */}
           {activeTab === 'learning' && (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
-              <div className="lcars-panel-title" style={{ borderColor: 'var(--lcars-gold)', color: 'var(--lcars-gold)' }}>05 NEURAL_PATTERN_REGISTRY</div>
-              <div className="grid grid-cols-2 gap-8 flex-1">
-                <section className="bg-white-5 p-8 flex flex-col gap-8 rounded-sm border border-white/5">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[11px] font-black text-gold uppercase tracking-[4px]">HARVEST_KNOWLEDGE</span>
-                    <Sparkles size={18} className="text-gold" />
+              <h1 className="section-title">Adaptive Skill Matrix</h1>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1">
+                <div className="panel">
+                  <div className="panel-header">
+                    <h2 className="panel-title">Learned Skills</h2>
+                    <BookOpen className="panel-icon" size={18} />
                   </div>
-                  <div className="space-y-4 flex-1 flex flex-col">
-                    <input value={learnName} onChange={e => setLearnName(e.target.value)} placeholder="ENTER_SKILL_IDENTIFIER..." className="bg-black border-2 border-white-5 p-5 text-sm outline-none focus:border-gold transition-all text-white font-mono" />
-                    <textarea value={learnContent} onChange={e => setLearnContent(e.target.value)} placeholder="INJECT_TECHNICAL_DOCUMENTATION_DATA..." className="flex-1 bg-black border-2 border-white-5 p-5 text-sm outline-none focus:border-gold transition-all text-white font-mono resize-none leading-relaxed" />
-                  </div>
-                  <button onClick={async () => {
-                    if (!learnName.trim() || !learnContent.trim()) return;
-                    setIsLearning(true);
-                    try {
-                      await axios.post(`${API_BASE}/learning/ingest`, { name: learnName, content: learnContent, source: 'dashboard' });
-                      setLearnName(''); setLearnContent('');
-                      const res = await axios.get(`${API_BASE}/learning/skills`);
-                      setLearnedSkills(res.data.skills || []);
-                    } catch { } finally { setIsLearning(false); }
-                  }} disabled={isLearning} className="lcars-button gold w-full h-16 text-lg font-black tracking-[10px]">
-                    {isLearning ? <Loader2 className="animate-spin" /> : 'INGEST'}
-                  </button>
-                </section>
-
-                <section className="bg-white-5 p-8 flex flex-col rounded-sm border border-white/5">
-                  <div className="flex justify-between items-center mb-8">
-                    <span className="text-[11px] font-black text-purple-400 uppercase tracking-[4px]">ACTIVE_SKILLS_MANIFEST</span>
-                    <Brain size={18} className="text-purple-400" />
-                  </div>
-                  <div className="flex-1 overflow-y-auto space-y-4 custom-scrollbar">
-                    {learnedSkills.map(s => (
-                      <div key={s.skill_name} className="p-6 bg-black border-l-8 border-purple-500/50 group hover:border-purple-400 transition-all">
-                        <div className="flex justify-between items-center mb-4">
-                          <div className="text-lg font-black text-white tracking-tight uppercase italic">{s.skill_name}</div>
-                          <button className="p-2 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all"><Trash2 size={16} /></button>
-                        </div>
-                        <div className="flex gap-2 flex-wrap">
-                          {Object.keys(s.endpoints || {}).map(ep => (
-                            <span key={ep} className="text-[9px] px-2 py-0.5 bg-purple-900/20 text-purple-300 border border-purple-500/20 uppercase font-black tracking-widest">{ep}</span>
-                          ))}
-                        </div>
+                  <div className="panel-body">
+                    {learnedSkills.map(skill => (
+                      <div key={skill.name} className="card">
+                        <div className="font-bold text-text-primary">{skill.name}</div>
+                        <p className="text-sm text-text-secondary mt-1">{skill.description}</p>
                       </div>
                     ))}
                   </div>
-                </section>
+                </div>
+                <div className="panel">
+                  <div className="panel-header">
+                    <h2 className="panel-title">Acquire New Skill</h2>
+                    <Sparkles className="panel-icon" size={18} />
+                  </div>
+                  <div className="panel-body flex flex-col gap-4">
+                    <input value={learnName} onChange={e => setLearnName(e.target.value)} placeholder="Skill Name (e.g., 'parse_api_docs')" className="input-field" />
+                    <textarea value={learnContent} onChange={e => setLearnContent(e.target.value)} placeholder="Skill Description or Code..." rows="8" className="input-field font-mono" />
+                  </div>
+                  <div className="panel-footer">
+                    <button onClick={() => { }} disabled={isLearning} className="button-primary">
+                      {isLearning ? <Loader2 className="animate-spin" size={16} /> : <Plus size={16} />}
+                      <span>{isLearning ? 'Assimilating...' : 'Assimilate Skill'}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
 
           {/* 06 MESH NET */}
           {activeTab === 'mesh' && (
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} className="flex flex-col h-full gap-6">
-              <div className="lcars-panel-title" style={{ borderColor: 'var(--lcars-orange)', color: 'var(--lcars-orange)' }}>06 SWARM_TOPOGRAPHY_MATRIX</div>
-
-              <div className="flex-1 relative bg-black border-2 border-white/5 rounded-sm overflow-hidden mesh-matrix">
-                {/* SVG connection layer */}
-                <svg className="mesh-svg-layer">
-                  {meshTopology.connections?.map((conn, idx) => {
-                    const fromNode = meshTopology.nodes.find(n => n.node_id === conn.from);
-                    const toNode = meshTopology.nodes.find(n => n.node_id === conn.to);
-                    if (!fromNode || !toNode) return null;
-
-                    const fAngle = (meshTopology.nodes.indexOf(fromNode) / meshTopology.nodes.length) * 2 * Math.PI;
-                    const tAngle = (meshTopology.nodes.indexOf(toNode) / meshTopology.nodes.length) * 2 * Math.PI;
-
-                    const fx = 50 + 35 * Math.cos(fAngle);
-                    const fy = 50 + 35 * Math.sin(fAngle);
-                    const tx = 50 + 35 * Math.cos(tAngle);
-                    const ty = 50 + 35 * Math.sin(tAngle);
-
-                    return (
-                      <g key={`${conn.from}-${conn.to}`}>
-                        <line x1={`${fx}%`} y1={`${fy}%`} x2={`${tx}%`} y2={`${ty}%`} className={`mesh-connection ${selectedNode?.node_id === conn.from || selectedNode?.node_id === conn.to ? 'active' : ''}`} />
-                        <line x1={`${fx}%`} y1={`${fy}%`} x2={`${tx}%`} y2={`${ty}%`} className="mesh-pulse" />
-                      </g>
-                    );
-                  })}
-                </svg>
-
-                {/* Nodes layer */}
-                {meshTopology.nodes.map((node, i) => {
-                  const angle = (i / meshTopology.nodes.length) * 2 * Math.PI;
-                  const x = 50 + 35 * Math.cos(angle);
-                  const y = 50 + 35 * Math.sin(angle);
-
-                  return (
-                    <motion.div
-                      key={node.node_id}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: i * 0.05 }}
-                      onClick={() => setSelectedNode(node)}
-                      className="mesh-node"
-                      style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
-                    >
-                      <div className="mesh-node-core">
-                        <Users size={32} />
-                        <div className={`mesh-node-status ${node.status === 'online' ? 'status-online' : 'status-offline'}`} />
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
+              <h1 className="section-title">Distributed Neural Mesh</h1>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1">
+                <div className="lg:col-span-4 xl:col-span-3 flex flex-col gap-4">
+                  <div className="panel">
+                    <div className="panel-header">
+                      <h2 className="panel-title">Mesh Overview</h2>
+                      <Orbit className="panel-icon" size={18} />
+                    </div>
+                    <div className="panel-body">
+                      <div className="flex justify-between items-center py-2 border-b border-border-color">
+                        <span className="stat-card-label">Total Nodes</span>
+                        <span className="stat-card-value text-lg">{meshTopology.nodes.length}</span>
                       </div>
-                      <div className="mesh-label-bubble">
-                        <div className="text-[10px] font-black text-white italic">{node.name}</div>
-                        <div className="text-[7px] text-orange-400 tracking-[1px] uppercase">{node.role}</div>
+                      <div className="flex justify-between items-center py-2 border-b border-border-color">
+                        <span className="stat-card-label">Alive Nodes</span>
+                        <span className="stat-card-value text-lg text-accent-success">{meshTopology.alive}</span>
                       </div>
-                    </motion.div>
-                  );
-                })}
-
-                {/* Overlays */}
-                {selectedNode && (
-                  <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="absolute bottom-10 right-10 p-6 bg-black/90 border-2 border-cyan-500 rounded-sm z-50 w-80 backdrop-blur-xl">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <div className="text-[9px] font-black text-cyan-400 uppercase tracking-widest mb-1">Peer Node Details</div>
-                        <div className="text-xl font-black text-white italic">{selectedNode.name}</div>
-                      </div>
-                      <button onClick={() => setSelectedNode(null)} className="text-cyan-400 hover:text-white"><X size={20} /></button>
-                    </div>
-                    <div className="space-y-3 mb-6">
-                      <div className="flex justify-between text-[10px]"><span className="opacity-40 uppercase">Role</span><span className="text-cyan-200">{selectedNode.role}</span></div>
-                      <div className="flex justify-between text-[10px]"><span className="opacity-40 uppercase">Tasks Routed</span><span className="text-cyan-200">{selectedNode.task_count}</span></div>
-                      <div className="flex justify-between text-[10px]"><span className="opacity-40 uppercase">Latency</span><span className="text-cyan-200">{selectedNode.latency_ms}ms</span></div>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {selectedNode.specialties?.slice(0, 3).map(s => (
-                        <span key={s} className="px-2 py-0.5 bg-cyan-950/30 border border-cyan-500/20 text-[8px] text-cyan-300 uppercase">{s}</span>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-
-                {meshRouteResult && (
-                  <motion.div initial={{ x: -100, opacity: 0 }} animate={{ x: 0, opacity: 1 }} className="mesh-info-overlay z-50 overflow-hidden flex flex-col max-h-[400px]">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="text-[10px] font-black text-orange-400 tracking-[4px]">ROUTING_SUCCESS</div>
-                      <button onClick={() => setMeshRouteResult(null)} className="text-white/40 hover:text-white"><X size={16} /></button>
-                    </div>
-                    <div className="text-sm font-black text-white mb-1 uppercase italic border-l-2 border-orange-500 pl-4">Target: {meshRouteResult.routed_to?.name}</div>
-                    <div className="text-[9px] text-white/40 mb-4 italic pl-4">MESH_PROTOCOL: v{meshRouteResult.mesh_version}</div>
-                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-4">
-                      {meshRouteResult.nodal_logs && meshRouteResult.nodal_logs.length > 0 && (
-                        <div className="bg-white/5 p-4 rounded-sm border border-white/5">
-                          <div className="text-[8px] font-black text-white/40 uppercase mb-2">Tactical Activity Log</div>
-                          {meshRouteResult.nodal_logs.map((log, lidx) => (
-                            <div key={lidx} className="text-[10px] font-mono text-orange-200/60 leading-tight mb-1">
-                              {log}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div>
-                        <div className="text-[8px] font-black text-white/40 uppercase mb-2">Payload Response</div>
-                        <div className="text-[12px] text-orange-50/80 leading-relaxed font-mono whitespace-pre-wrap">
-                          {(() => {
-                            const raw = meshRouteResult.response || '';
-                            const planMatch = raw.match(/\[PLAN\](.*?)(\[|\n\n|$)/s);
-                            if (planMatch) {
-                              return (
-                                <>
-                                  <div className="bg-orange-500/10 border-l-4 border-orange-500 p-4 mb-4">
-                                    <div className="text-[9px] font-black text-orange-400 uppercase mb-2">Architectural Plan</div>
-                                    <div className="text-[11px] text-orange-100 italic">{planMatch[1].trim()}</div>
-                                  </div>
-                                  {raw.replace(/\[PLAN\].*?(\[|\n\n|$)/s, '$1').trim()}
-                                </>
-                              );
-                            }
-                            return raw || meshRouteResult.error;
-                          })()}
-                        </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="stat-card-label">Connections</span>
+                        <span className="stat-card-value text-lg">{meshTopology.connections.length}</span>
                       </div>
                     </div>
-                  </motion.div>
-                )}
-              </div>
-
-              <div className="bg-black border-2 border-orange-950/50 p-6 flex gap-4">
-                <div className="flex-1 relative">
-                  <input value={meshRouteTask} onChange={e => setMeshRouteTask(e.target.value)} onKeyDown={e => e.key === 'Enter' && routeMesh()}
-                    placeholder="INJECT_TASK_FOR_AUTOROUTING..." className="w-full bg-black border-2 border-white-5 p-5 text-sm outline-none focus:border-orange-500 transition-all text-white font-mono" />
-                  <Radio size={20} className="absolute right-6 top-1/2 -translate-y-1/2 text-orange-600 animate-pulse" />
+                  </div>
+                  <div className="panel flex-1">
+                    <div className="panel-header">
+                      <h2 className="panel-title">Task Routing</h2>
+                      <Radio className="panel-icon" size={18} />
+                    </div>
+                    <div className="panel-body">
+                      <textarea value={meshRouteTask} onChange={e => setMeshRouteTask(e.target.value)} placeholder="Describe task to route..." rows="3" className="input-field font-mono" />
+                    </div>
+                    <div className="panel-footer">
+                      <button onClick={routeMesh} disabled={isRouting} className="button-primary">
+                        {isRouting ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
+                        <span>{isRouting ? 'Routing...' : 'Route Task'}</span>
+                      </button>
+                    </div>
+                    {meshRouteResult && (
+                      <div className="p-4 border-t border-border-color">
+                        <h3 className="text-xs font-bold text-text-secondary uppercase tracking-wider">Routing Solution:</h3>
+                        <pre className="text-xs font-mono mt-2 overflow-auto custom-scrollbar bg-background-primary p-2 rounded-md">{JSON.stringify(meshRouteResult, null, 2)}</pre>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <button onClick={routeMesh} disabled={isRouting} className="lcars-button orange w-48 h-18 text-lg font-black">ROUTE</button>
+                <div className="lg:col-span-8 xl:col-span-9 panel relative">
+                  <MeshHeatmap nodes={meshTopology.nodes} connections={meshTopology.connections} onNodeClick={setSelectedNode} />
+                </div>
               </div>
             </motion.div>
           )}
 
-        </AnimatePresence>
+          {/* 07 TELEMETRY */}
+          {activeTab === 'telemetry' && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
+              <h1 className="section-title">Real-Time Telemetry</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="panel flex flex-col">
+                  <div className="panel-header">
+                    <h2 className="panel-title">System Coherence</h2>
+                    <Activity className="panel-icon" size={18} />
+                  </div>
+                  <div className="panel-body flex-1 flex flex-col justify-center items-center">
+                    <div className="text-5xl font-bold text-accent-primary mb-2">{(overview?.mesh_coherence * 100)?.toFixed(1) || 0}%</div>
+                    <div className="text-sm text-text-secondary uppercase tracking-widest text-center">Global Swarm Coherence</div>
+                  </div>
+                </div>
+                <div className="panel flex flex-col">
+                  <div className="panel-header">
+                    <h2 className="panel-title">Harmony Index</h2>
+                    <Zap className="panel-icon" size={18} />
+                  </div>
+                  <div className="panel-body flex-1 flex flex-col justify-center items-center">
+                    <div className="text-5xl font-bold text-accent-success mb-2">{overview?.harmony_index?.toFixed(2) || '0.00'}</div>
+                    <div className="text-sm text-text-secondary uppercase tracking-widest text-center">Alignment Balance</div>
+                  </div>
+                </div>
+                <div className="panel flex flex-col">
+                  <div className="panel-header">
+                    <h2 className="panel-title">Active Superpositions</h2>
+                    <Orbit className="panel-icon" size={18} />
+                  </div>
+                  <div className="panel-body flex-1 flex flex-col justify-center items-center">
+                    <div className="text-5xl font-bold text-accent-warning mb-2">{overview?.superpositions?.length || 0}</div>
+                    <div className="text-sm text-text-secondary uppercase tracking-widest text-center">Parallel Reasoning Threads</div>
+                  </div>
+                </div>
+              </div>
 
-        {/* ─── Artifact Tactical Inspector (Modal) ─── */}
-        <AnimatePresence>
-          {selectedArtifact && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="modal-overlay backdrop-blur"
-              onClick={() => setSelectedArtifact(null)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                exit={{ scale: 0.9, y: 20 }}
-                className="modal-content"
-                onClick={e => e.stopPropagation()}
-              >
-                {/* Header */}
-                <div className="modal-header">
-                  <div className="flex items-center gap-6">
-                    <div className="bg-black text-tan p-4 font-black skew-x-[-15deg] text-2xl">
-                      {selectedArtifact.filename.charAt(0).toUpperCase()}
+              <div className="panel flex-1">
+                <div className="panel-header">
+                  <h2 className="panel-title">Resource Utilization History</h2>
+                  <Cpu className="panel-icon" size={18} />
+                </div>
+                <div className="panel-body">
+                  <div className="space-y-6">
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-text-secondary">Collective CPU Core Utilization</span>
+                        <span className="text-accent-primary font-mono">{overview?.system?.cpu_load?.toFixed(1) || 0}%</span>
+                      </div>
+                      <div className="w-full bg-background-primary rounded-full h-4 overflow-hidden border border-border-color">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${overview?.system?.cpu_load || 0}%` }}
+                          className="bg-accent-primary h-full shadow-[0_0_10px_rgba(0,170,255,0.5)]"
+                        />
+                      </div>
                     </div>
                     <div>
-                      <h2 className="text-2xl font-black text-black tracking-tight">{selectedArtifact.filename}</h2>
-                      <p className="text-[10px] font-bold text-black/60 uppercase tracking-widest">
-                        Origin: {selectedArtifact.created_by} // {selectedArtifact.size} Bytes
-                      </p>
-                    </div>
-                  </div>
-                  <button onClick={() => setSelectedArtifact(null)} className="p-2 hover:bg-black/10 rounded-full transition-colors cursor-pointer">
-                    <X size={32} className="text-black" />
-                  </button>
-                </div>
-
-                {/* Body */}
-                <div className="modal-body">
-                  {/* Left: Metadata & Status */}
-                  <div className="bg-white-5 p-8 space-y-8 flex flex-col border-r border-white-5">
-                    <div className="space-y-4">
-                      <span className="text-[11px] font-black opacity-40 uppercase tracking-[4px]">TACTICAL_STATUS</span>
-                      <div className="grid grid-cols-1 gap-2">
-                        <div className="p-4 bg-black border-l-4 border-blue-500">
-                          <div className="text-[8px] opacity-40 uppercase font-black">Lifecycle Stage</div>
-                          <div className="text-sm font-black text-white uppercase">{selectedArtifact.status}</div>
-                        </div>
-                        <div className={`p-4 bg-black border-l-4 ${selectedArtifact.security_status === 'safe' ? 'border-green-500' : 'border-red-500 animate-pulse'}`}>
-                          <div className="text-[8px] opacity-40 uppercase font-black">Security Audit</div>
-                          <div className="text-sm font-black text-white uppercase flex items-center gap-2">
-                            <Shield size={14} /> {selectedArtifact.security_status || 'SCANNING...'}
-                          </div>
-                        </div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-text-secondary">Distributed Memory Pressure</span>
+                        <span className="text-accent-success font-mono">{overview?.system?.memory_usage?.toFixed(1) || 0}%</span>
                       </div>
-                    </div>
-
-                    <div className="flex-1 space-y-4">
-                      <span className="text-[11px] font-black opacity-40 uppercase tracking-[4px]">INTEGRATION_LOGS</span>
-                      <div className="bg-black p-4 font-mono text-[9px] text-tan opacity-60 h-full overflow-y-auto space-y-1">
-                        <div>{'>'} [SYSTEM] LOCATING ARTIFACT AT PATH...</div>
-                        <div>{'>'} [SECURITY] CHECKSUM VERIFIED (SHA-256)</div>
-                        <div>{'>'} [AUDIT] NO MALICIOUS PATTERNS DETECTED</div>
-                        {selectedArtifact.status === 'integrated' && <div className="text-green-500">{'>'} [SUCCESS] DEPLOYED TO REPOSITORY</div>}
+                      <div className="w-full bg-background-primary rounded-full h-4 overflow-hidden border border-border-color">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${overview?.system?.memory_usage || 0}%` }}
+                          className="bg-accent-success h-full shadow-[0_0_10px_rgba(0,255,65,0.5)]"
+                        />
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
-                  {/* Right: Actions & Preview */}
-                  <div className="p-8 flex flex-col gap-8 bg-black">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[11px] font-black text-tan uppercase tracking-[4px]">COMMAND_OVERRIDE</span>
+          {/* 08 FEDERATION */}
+          {activeTab === 'federation' && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
+              <h1 className="section-title">Federation Control</h1>
+              {federationData.stats?.error ? (
+                <div className="panel flex-1 flex flex-col items-center justify-center p-12 text-center">
+                  <XCircle size={64} className="text-accent-danger mb-4 opacity-50" />
+                  <h2 className="text-2xl font-bold mb-2 text-text-primary">Federated Mesh Inactive</h2>
+                  <p className="text-text-secondary max-w-md">The federation service is currently waiting for secondary nodes or has not been initialized on this instance. Check logs for SEED_NODE connectivity.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="stat-card">
+                      <div className="flex items-center justify-between">
+                        <span className="stat-card-label">Active Peers</span>
+                        <Users className="stat-card-icon" size={20} />
+                      </div>
+                      <div className="stat-card-value">{federationData.stats?.connected_nodes || 0}</div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <button
-                        onClick={() => { handleArtifactAction(selectedArtifact.filename, 'approve'); setSelectedArtifact(null); }}
-                        className="lcars-button tan h-20 text-lg flex items-center justify-center gap-4 group cursor-pointer"
-                      >
-                        <CheckCircle2 className="group-hover:scale-125 transition-transform" /> APPROVE & RELEASE
-                      </button>
-                      <button
-                        onClick={() => { handleArtifactAction(selectedArtifact.filename, 'test'); setSelectedArtifact(null); }}
-                        className="lcars-button blue h-20 text-lg flex items-center justify-center gap-4 group cursor-pointer"
-                      >
-                        <TestTube className="group-hover:rotate-12 transition-transform" /> RUN TEST SUITE
-                      </button>
-                      <button
-                        onClick={() => { handleArtifactAction(selectedArtifact.filename, 'integrate'); setSelectedArtifact(null); }}
-                        className="lcars-button purple h-20 text-lg flex items-center justify-center gap-4 group cursor-pointer"
-                      >
-                        <Rocket className="group-hover:translate-y--1 transition-transform" /> INTEGRATE & DEPLOY
-                      </button>
-                      <button
-                        onClick={() => { handleArtifactAction(selectedArtifact.filename, 'reject'); setSelectedArtifact(null); }}
-                        className="lcars-button red h-20 text-lg flex items-center justify-center gap-4 group cursor-pointer"
-                      >
-                        <Ban className="group-hover:scale-90 transition-transform" /> REJECT ARTIFACT
-                      </button>
+                    <div className="stat-card">
+                      <div className="flex items-center justify-between">
+                        <span className="stat-card-label">Total Shared Nodes</span>
+                        <Package className="stat-card-icon" size={20} />
+                      </div>
+                      <div className="stat-card-value">{federationData.stats?.total_nodes || 0}</div>
                     </div>
-
-                    <div className="flex-1 bg-white-5 p-6 flex flex-col items-center justify-center opacity-20">
-                      <FileText size={64} className="mb-4" />
-                      <span className="text-[10px] font-black uppercase tracking-[10px]">Preview Unavailable</span>
+                    <div className="stat-card">
+                      <div className="flex items-center justify-between">
+                        <span className="stat-card-label">Local Node</span>
+                        <Server className="stat-card-icon" size={20} />
+                      </div>
+                      <div className="text-xs font-mono text-accent-primary truncate">{federationData.stats?.local_node?.node_id || "OFFLINE"}</div>
                     </div>
                   </div>
+                  <div className="panel flex-1">
+                    <div className="panel-header">
+                      <h2 className="panel-title">Federated Peers</h2>
+                      <Server className="panel-icon" size={18} />
+                    </div>
+                    <div className="panel-body overflow-x-auto">
+                      <table className="data-table">
+                        <thead className="data-table-header">
+                          <tr>
+                            <th>Peer Name</th>
+                            <th>Status</th>
+                            <th>Last Seen</th>
+                            <th>Host/Port</th>
+                            <th>Capabilities</th>
+                          </tr>
+                        </thead>
+                        <tbody className="data-table-body">
+                          {federationData.peers && federationData.peers.length > 0 ? federationData.peers.map(peer => (
+                            <tr key={peer.node_id} className="data-table-row">
+                              <td className="font-bold">{peer.name}</td>
+                              <td><div className={`tag ${peer.status === 'online' ? 'tag-success' : 'tag-danger'}`}>{peer.status}</div></td>
+                              <td className="text-xs font-mono">{peer.last_seen ? new Date(peer.last_seen).toLocaleString() : 'N/A'}</td>
+                              <td className="text-xs font-mono">{peer.host}:{peer.port}</td>
+                              <td>
+                                <div className="flex gap-1">
+                                  {peer.capabilities?.slice(0, 2).map(c => <span key={c} className="tag-xs">{c}</span>)}
+                                </div>
+                              </td>
+                            </tr>
+                          )) : (
+                            <tr><td colSpan="5" className="text-center py-12 text-text-secondary opacity-50">No external peers discovered on the mesh.</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          )}
+
+          {/* 09 SECURITY */}
+          {activeTab === 'security' && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
+              <h1 className="section-title">Sentinel Neural Wall</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="stat-card">
+                  <div className="flex items-center justify-between">
+                    <span className="stat-card-label">Threats Detected</span>
+                    <Shield className="stat-card-icon" size={20} />
+                  </div>
+                  <div className="stat-card-value">{securityData.stats?.threats_detected_24h || 0}</div>
                 </div>
-              </motion.div>
+                <div className="stat-card">
+                  <div className="flex items-center justify-between">
+                    <span className="stat-card-label">Threats Neutralized</span>
+                    <CheckCircle2 className="stat-card-icon" size={20} />
+                  </div>
+                  <div className="stat-card-value">{securityData.stats?.threats_neutralized_24h || 0}</div>
+                </div>
+              </div>
+              <div className="panel flex-1">
+                <div className="panel-header">
+                  <h2 className="panel-title">Threat Log</h2>
+                  <Activity className="panel-icon" size={18} />
+                </div>
+                <div className="panel-body">
+                  <table className="data-table">
+                    <thead className="data-table-header">
+                      <tr>
+                        <th>Timestamp</th>
+                        <th>Threat Type</th>
+                        <th>Severity</th>
+                        <th>Action Taken</th>
+                        <th>Source</th>
+                      </tr>
+                    </thead>
+                    <tbody className="data-table-body">
+                      {securityData.threats.map(threat => (
+                        <tr key={threat.id} className="data-table-row">
+                          <td>{new Date(threat.timestamp).toLocaleString()}</td>
+                          <td>{threat.threat_type}</td>
+                          <td><div className={`tag ${threat.severity === 'critical' ? 'tag-danger' : threat.severity === 'high' ? 'tag-warning' : 'tag-info'}`}>{threat.severity}</div></td>
+                          <td>{threat.action_taken}</td>
+                          <td>{threat.source_ip}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 10 RESEARCH */}
+          {activeTab === 'research' && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
+              <h1 className="section-title">Autonomous Research</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="stat-card">
+                  <span className="stat-card-label">Active Tasks</span>
+                  <div className="stat-card-value">{researchData.stats?.active_tasks || 0}</div>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-card-label">Completed Tasks</span>
+                  <div className="stat-card-value">{researchData.stats?.completed_tasks_24h || 0}</div>
+                </div>
+              </div>
+              <div className="panel flex-1">
+                <div className="panel-header">
+                  <h2 className="panel-title">Research Tasks</h2>
+                </div>
+                <div className="panel-body">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {researchData.tasks.map(task => (
+                      <div key={task.task_id} className="card">
+                        <div className="font-bold">{task.objective}</div>
+                        <div className="text-sm text-text-secondary">{task.status}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 11 VERIFICATION */}
+          {activeTab === 'verification' && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
+              <h1 className="section-title">Chain of Verification</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="stat-card">
+                  <span className="stat-card-label">Items in Queue</span>
+                  <div className="stat-card-value">{verificationData.stats?.items_in_queue || 0}</div>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-card-label">Verified Last Hour</span>
+                  <div className="stat-card-value">{verificationData.stats?.verified_last_hour || 0}</div>
+                </div>
+              </div>
+              <div className="panel flex-1">
+                <div className="panel-header">
+                  <h2 className="panel-title">Verification Queue</h2>
+                </div>
+                <div className="panel-body">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {verificationData.queue.map(item => (
+                      <div key={item.item_id} className="card">
+                        <div className="font-bold">{item.item_type}</div>
+                        <div className="text-sm text-text-secondary">Status: {item.status}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 12 INFRASTRUCTURE */}
+          {activeTab === 'infra' && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
+              <h1 className="section-title">Self-Healing Infrastructure</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="stat-card">
+                  <span className="stat-card-label">Node Status</span>
+                  <div className="stat-card-value">{infraData.status?.overall_status || 'Unknown'}</div>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-card-label">Active Nodes</span>
+                  <div className="stat-card-value">{infraData.status?.active_nodes || 0}</div>
+                </div>
+              </div>
+              <div className="panel flex-1">
+                <div className="panel-header">
+                  <h2 className="panel-title">Node Status</h2>
+                </div>
+                <div className="panel-body">
+                  <table className="data-table">
+                    <thead className="data-table-header">
+                      <tr>
+                        <th>Node ID</th>
+                        <th>Status</th>
+                        <th>CPU</th>
+                        <th>Memory</th>
+                      </tr>
+                    </thead>
+                    <tbody className="data-table-body">
+                      {infraData.nodes.map(node => (
+                        <tr key={node.node_id} className="data-table-row">
+                          <td>{node.node_id}</td>
+                          <td>{node.status}</td>
+                          <td>{node.cpu_usage}%</td>
+                          <td>{node.memory_usage}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 13 TESTING */}
+          {activeTab === 'testing' && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
+              <h1 className="section-title">Zero-Human Testing</h1>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="stat-card">
+                  <span className="stat-card-label">Tests Running</span>
+                  <div className="stat-card-value">{testingData.stats?.tests_running || 0}</div>
+                </div>
+                <div className="stat-card">
+                  <span className="stat-card-label">Success Rate (24h)</span>
+                  <div className="stat-card-value">{testingData.stats?.success_rate_24h || 0}%</div>
+                </div>
+              </div>
+              <div className="panel flex-1">
+                <div className="panel-header">
+                  <h2 className="panel-title">Test Runs</h2>
+                </div>
+                <div className="panel-body">
+                  <table className="data-table">
+                    <thead className="data-table-header">
+                      <tr>
+                        <th>Run ID</th>
+                        <th>Status</th>
+                        <th>Timestamp</th>
+                        <th>Duration</th>
+                      </tr>
+                    </thead>
+                    <tbody className="data-table-body">
+                      {testingData.runs.map(run => (
+                        <tr key={run.run_id} className="data-table-row">
+                          <td>{run.run_id}</td>
+                          <td>{run.status}</td>
+                          <td>{new Date(run.timestamp).toLocaleString()}</td>
+                          <td>{run.duration_seconds}s</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
-
-      {/* ─── LCARS FOOTER NAVIGATION ─── */}
-      <div className="lcars-bar" style={{ gridColumn: '1 / span 2', gridRow: '3 / span 1', marginTop: '10px', background: 'var(--lcars-blue)', height: '40px', borderRadius: '40px 0 0 40px' }}>
-        <div className="flex justify-between w-full h-full items-center px-10">
-          <div className="flex gap-10 items-center">
-            <span style={{ fontSize: '11px', fontWeight: 900, color: 'black' }}>TRANS_MODE: P2P_ENCRYPTED</span>
-            <div className="flex gap-1 h-2">
-              {[...Array(20)].map((_, i) => <div key={i} className="w-4 h-full bg-black/20" />)}
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <div className="w-16 h-4 bg-orange-400/50 rounded-full"></div>
-            <div className="w-16 h-4 bg-purple-400/50 rounded-full"></div>
-            <div className="w-16 h-4 bg-gold-400/50 rounded-full"></div>
-          </div>
-        </div>
-      </div>
-
-      <style>{`
-        .lcars-button.active {
-           box-shadow: 0 0 20px rgba(255,255,255,0.4);
-           filter: brightness(1.5);
-           position: relative;
-        }
-        .lcars-button.active::after {
-           content: '';
-           position: absolute;
-           left: -5px;
-           top: 0;
-           bottom: 0;
-           width: 5px;
-           background: white;
-        }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #000; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #333; }
-        
-        main {
-           mask-image: linear-gradient(to bottom, black 95%, transparent 100%);
-        }
-      `}</style>
-
     </div>
   );
 }

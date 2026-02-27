@@ -1,10 +1,9 @@
-
 import os
 import subprocess
 import platform
 
 class FileSkill:
-    """Read/write files in the swarm artifacts directory."""
+    """Read/write files in the swarm artifacts directory with auto-registration."""
     skill_name = "FileSkill"
     description = "Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories."
 
@@ -13,7 +12,7 @@ class FileSkill:
         os.makedirs(self.base_dir, exist_ok=True)
 
     def write_file(self, filename: str, content: str) -> str:
-        """Write a file, auto-creating any missing parent directories."""
+        """Write a file, auto-creating any missing parent directories, and register with pipeline."""
         # Normalize path separators
         filename = filename.replace("\\", "/")
         path = os.path.join(self.base_dir, filename)
@@ -23,6 +22,15 @@ class FileSkill:
             os.makedirs(parent, exist_ok=True)
         with open(path, "w", encoding="utf-8") as f:
             f.write(content)
+        
+        # AUTO-REGISTER with artifact pipeline
+        try:
+            from swarm_v2.core.artifact_pipeline import get_artifact_pipeline
+            pipeline = get_artifact_pipeline()
+            pipeline.register_artifact(filename, created_by="Agent")
+        except Exception as e:
+            pass  # Don't fail if pipeline unavailable
+        
         return f"[OK] File written: {filename} ({len(content):,} bytes) -> {self.base_dir}/"
 
     def read_file(self, filename: str) -> str:
@@ -39,7 +47,7 @@ class FileSkill:
         results = []
         for root, dirs, files in os.walk(self.base_dir):
             # Skip hidden/cache dirs
-            dirs[:] = [d for d in dirs if not d.startswith(('.', '__'))]
+            dirs[:] = [d for d in dirs if not d.startswith('.', '__')]
             for fname in files:
                 abs_path = os.path.join(root, fname)
                 rel_path = os.path.relpath(abs_path, self.base_dir).replace("\\", "/")

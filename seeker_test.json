@@ -1,0 +1,12 @@
+{
+  "role": "Researcher",
+  "name": "Seeker",
+  "response": "",
+  "memory": {
+    "short_term_count": 2,
+    "long_term_count": 26,
+    "facts": 0,
+    "tasks_completed": 26,
+    "archived_conversations": 0
+  }
+}

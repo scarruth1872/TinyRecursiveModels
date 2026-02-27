@@ -1,0 +1,13 @@
+{
+  "gpu_backend": "directml_vulkan",
+  "gpu_device": "AMD Radeon RX 6700 XT",
+  "pytorch_backend": "directml",
+  "ollama_backend": "vulkan",
+  "environment_variables": {
+    "OLLAMA_VULKAN": "1",
+    "OLLAMA_NUM_PARALLEL": "2",
+    "HSA_OVERRIDE_GFX_VERSION": "10.3.0"
+  },
+  "recommended_batch_size": 4,
+  "vram_available_gb": 12
+}

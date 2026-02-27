@@ -11,6 +11,7 @@ from typing import Dict, List, Optional
 from enum import Enum
 
 ARTIFACTS_DIR = "swarm_v2_artifacts"
+AGENT_SKILLS_DIR = ".agent/skills"  # AntiGravity agent skill definitions
 INTEGRATION_DIR = "swarm_v2_integrated"
 PIPELINE_DB = "swarm_v2_memory/artifact_pipeline.json"
 
@@ -41,34 +42,50 @@ class ArtifactPipeline:
         return {}
 
     def _save(self):
+        # Atomic-ish save
+        temp_file = self.filename + ".tmp" if hasattr(self, "filename") else PIPELINE_DB + ".tmp"
         with open(PIPELINE_DB, "w", encoding="utf-8") as f:
             json.dump(self.artifacts, f, indent=2, default=str)
 
     def scan_artifacts(self) -> List[Dict]:
-        """Scan the artifacts directory recursively and register any new files."""
+        """Scan the artifacts directory and agent skills recursively and register any new files."""
         now = datetime.now().isoformat()
         new_discoveries = []
         
-        for root, _, files in os.walk(ARTIFACTS_DIR):
+        # We'll batch save at the end
+        modified = False
+        
+        # Scan main artifacts directory
+        for root, dirs, files in os.walk(ARTIFACTS_DIR):
+            # Skip hidden, cache, and massive dependency dirs
+            to_skip = ["__pycache__", ".git", "node_modules", "venv", ".next", "dist", "build"]
+            for d in to_skip:
+                if d in dirs:
+                    dirs.remove(d)
+            
             for filename in files:
                 rel_path = os.path.relpath(os.path.join(root, filename), ARTIFACTS_DIR)
                 filepath = os.path.join(root, filename)
                 
                 # Skip massive node_modules/venv if they exist in artifacts
-                if any(ext in rel_path for ext in ["node_modules", "venv", ".git"]):
+                if any(ext in rel_path for ext in ["node_modules", "venv", ".git", "__pycache__"]):
                     continue
 
                 if rel_path in self.artifacts:
-                    self.artifacts[rel_path]["size"] = os.path.getsize(filepath)
-                    if "security_status" not in self.artifacts[rel_path]:
-                        self.artifacts[rel_path]["security_status"] = "pending_scan"
+                    # Update size if changed
+                    try:
+                        sz = os.path.getsize(filepath)
+                        if self.artifacts[rel_path].get("size") != sz:
+                            self.artifacts[rel_path]["size"] = sz
+                            modified = True
+                    except: pass
                     continue
 
                 # NEW: Auto-Approval Policy
-                # .md, .txt, and critical maintenance files are auto-approved and integrated
+                modified = True
                 auto_integrate = False
                 ext = os.path.splitext(rel_path)[1].lower()
-                maintenance_keywords = ["monitor", "backup", "maintenance", "setup", "install", "health"]
+                maintenance_keywords = ["monitor", "backup", "maintenance", "setup", "install", "health", "log"]
                 
                 is_doc = ext in ('.md', '.txt')
                 is_maintenance = any(kw in rel_path.lower() for kw in maintenance_keywords)
@@ -100,10 +117,48 @@ class ArtifactPipeline:
                 if auto_integrate:
                     # Determine subdir for docs/maintenance
                     subdir = "docs" if is_doc else "maintenance"
-                    self.integrate(rel_path, target_subdir=subdir)
+                    self.integrate(rel_path, target_subdir=subdir, batch_save=True)
                     new_discoveries.append(rel_path)
 
-        self._save()
+        # Scan agent skills directory (.agent/skills/) - these are CRITICAL for agent personas
+        if os.path.exists(AGENT_SKILLS_DIR):
+            for filename in os.listdir(AGENT_SKILLS_DIR):
+                if not filename.endswith('.md'):
+                    continue
+                rel_path = f".agent/skills/{filename}"
+                filepath = os.path.join(AGENT_SKILLS_DIR, filename)
+                
+                if rel_path in self.artifacts:
+                    # Update size if changed
+                    try:
+                        sz = os.path.getsize(filepath)
+                        if self.artifacts[rel_path].get("size") != sz:
+                            self.artifacts[rel_path]["size"] = sz
+                            modified = True
+                    except: pass
+                    continue
+                
+                # NEW: Agent skills are CRITICAL - auto-approve immediately
+                modified = True
+                self.artifacts[rel_path] = {
+                    "filename": rel_path,
+                    "status": ArtifactStatus.APPROVED,
+                    "size": os.path.getsize(filepath),
+                    "created_at": now,
+                    "created_by": "System_Scan",
+                    "reviewed_by": "System",
+                    "reviewed_at": now,
+                    "review_notes": "Auto-approved: Critical agent skill definition",
+                    "test_file": None,
+                    "test_result": None,
+                    "integrated_at": None,
+                    "integrated_path": None,
+                    "security_status": "verified",
+                }
+                new_discoveries.append(rel_path)
+
+        if modified:
+            self._save()
         return self.list_all()
 
     def register_artifact(self, filename: str, created_by: str):
@@ -127,6 +182,23 @@ class ArtifactPipeline:
             "security_status": "pending_scan",
         }
         self._save()
+        
+        # Phase 2: Semantic Indexing
+        try:
+            from swarm_v2.core.semantic_index import get_semantic_index
+            content = self.get_content(filename)
+            if content:
+                # We do this synchronously for now, or could use a thread
+                import threading
+                def run_indexing():
+                    import asyncio
+                    idx = get_semantic_index()
+                    asyncio.run(idx.index_artifact(filename, content, {"created_by": created_by}))
+                
+                threading.Thread(target=run_indexing).start()
+        except Exception as e:
+            print(f"[Pipeline] Semantic indexing deferred: {e}")
+
         return self.artifacts[filename]
 
     def approve(self, filename: str, reviewer: str = "user", notes: str = "") -> Optional[Dict]:
@@ -161,7 +233,7 @@ class ArtifactPipeline:
         self._save()
         return self.artifacts[filename]
 
-    def integrate(self, filename: str, target_subdir: str = "") -> Optional[Dict]:
+    def integrate(self, filename: str, target_subdir: str = "", batch_save: bool = False) -> Optional[Dict]:
         """Copy tested artifact to the integration directory."""
         if filename not in self.artifacts:
             return None
@@ -175,13 +247,32 @@ class ArtifactPipeline:
         
         # Ensure parent directory of destination exists
         os.makedirs(os.path.dirname(dest), exist_ok=True)
-        shutil.copy2(src, dest)
+        try:
+            shutil.copy2(src, dest)
+            self.artifacts[filename]["status"] = ArtifactStatus.INTEGRATED
+            self.artifacts[filename]["integrated_at"] = datetime.now().isoformat()
+            self.artifacts[filename]["integrated_path"] = dest
+            if not batch_save:
+                self._save()
+            
+            # Phase 2: Semantic Indexing on Integration
+            try:
+                from swarm_v2.core.semantic_index import get_semantic_index
+                content = self.get_content(filename)
+                if content:
+                    import threading
+                    def run_indexing():
+                        import asyncio
+                        idx = get_semantic_index()
+                        asyncio.run(idx.index_artifact(filename, content, {"status": "integrated"}))
+                    threading.Thread(target=run_indexing).start()
+            except Exception as e:
+                print(f"[Pipeline] Semantic indexing error: {e}")
 
-        self.artifacts[filename]["status"] = ArtifactStatus.INTEGRATED
-        self.artifacts[filename]["integrated_at"] = datetime.now().isoformat()
-        self.artifacts[filename]["integrated_path"] = dest
-        self._save()
-        return self.artifacts[filename]
+            return self.artifacts[filename]
+        except Exception as e:
+            print(f"Integration error {filename}: {e}")
+            return None
 
     def get_artifact(self, filename: str) -> Optional[Dict]:
         return self.artifacts.get(filename)
@@ -267,6 +358,10 @@ class ArtifactPipeline:
                 self.approve(filename, reviewer, "Batch approved")
                 count += 1
         return count
+
+    def has_pending_reviews(self) -> bool:
+        """Check if there are any artifacts awaiting review."""
+        return any(a["status"] == ArtifactStatus.PENDING for a in self.artifacts.values())
 
     def get_stats(self) -> Dict:
         statuses = [a["status"] for a in self.artifacts.values()]

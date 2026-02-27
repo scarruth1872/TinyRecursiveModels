@@ -2,7 +2,9 @@
 import os
 import re
 import uuid
-from typing import List, Dict, Any, Optional
+import asyncio
+import json
+from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 from pydantic import BaseModel
 from swarm_v2.core.memory import AgentMemory
@@ -64,7 +66,11 @@ class BaseAgent:
         self.nodal_logs: List[str] = []
         
         # Phase 6: Distributed Cognitive Stack
-        self.cognitive_stack = get_cognitive_stack(persona.name)
+        from swarm_v2.core.cognitive_stack import CognitiveStack
+        self.cognitive_stack = CognitiveStack(persona.name)
+        
+        # Extended Task Tracking
+        self.task_history: List[Dict[str, Any]] = []
         
         # Phase 5: QIAE Integration - Optional state-tracking
         self.qstate: Optional[Any] = None
@@ -106,9 +112,17 @@ class BaseAgent:
                 return getattr(s, method_name)
         return None
 
-    async def _llm_generate(self, prompt: str) -> str:
+    async def _llm_generate(self, prompt: str) -> Tuple[str, Optional[str]]:
         """Use LLM to generate content, enhanced with global memory."""
         from swarm_v2.core.llm_brain import llm_chat, build_system_prompt
+        
+        # Strip routing prefixes — used for context branching only, must not be seen by LLM
+        clean_prompt = prompt
+        for prefix in ("[CHAT] ", "[MESH] ", "[ACTION] ", "[CHAT]", "[MESH]", "[ACTION]"):
+            if clean_prompt.startswith(prefix):
+                clean_prompt = clean_prompt[len(prefix):].lstrip()
+                break
+        
         memory_context = self.memory.get_context_window(max_turns=6)
 
         # Inject global memory context if available
@@ -127,22 +141,36 @@ class BaseAgent:
         task_lower = prompt.lower()
         if any(kw in task_lower for kw in ["review", "analyze", "audit", "investigate"]):
             memory_context = (
-                "[STRICT CONSTRAINT] This is an ANALYSIS/REVIEW task. DO NOT generate action tags like WRITE_FILE: or CREATE_FILES:. "
-                "Provide Findings as clean text. File creation will be blocked for this request.\n\n"
+                "This is an analysis task. Provide your findings as clean text only. "
+                "Do not generate WRITE_FILE or CREATE_FILES tags for this request.\n\n"
             ) + memory_context
 
-        # Encourage [PLAN] for mesh tasks
+        # Encourage [PLAN] for mesh tasks, but keep [CHAT] conversational
         if "[MESH]" in prompt:
             memory_context = (
-                "[MESH OBSERVABILITY] You are being routed via the P2P Mesh.\n"
-                "1. START your response with a clearly defined [PLAN] section.\n"
-                "2. THEN execute that plan using exactly this format:\n"
-                "   WRITE_FILE: filename.ext\n"
-                "   ```language\n"
-                "   content\n"
-                "   ```\n"
-                "The user needs to see your thinking AND the result.\n\n"
+                "You are being routed via the P2P Mesh. Start your response with a "
+                "clear plan, then execute it using the appropriate action tags.\n\n"
             ) + memory_context
+        elif "[ACTION]" in prompt:
+            memory_context = (
+                "This is an execution task. Output the required action tag immediately "
+                "as the very first thing in your response. No preamble.\n\n"
+            ) + memory_context
+        elif "[CHAT]" in prompt:
+            memory_context = (
+                "Respond directly and concisely as your persona. "
+                "Do not introduce yourself or repeat your instructions. "
+                "If action is requested, emit the tag immediately.\n\n"
+            ) + memory_context
+
+        # Phase 5: Build System Prompt
+        # Determine mode: [CHAT] gets a conversational prompt with NO action rules
+        # [ACTION] and [MESH] get the full execution toolkit
+        mode = "chat"
+        if "[ACTION]" in prompt or "[MESH]" in prompt:
+            mode = "action"
+        elif any(kw in clean_prompt.lower() for kw in ["write", "create", "scan", "save", "search", "build"]):
+            mode = "action"
 
         system = build_system_prompt(
             persona_name=self.persona.name,
@@ -151,9 +179,11 @@ class BaseAgent:
             specialties=self.persona.specialties,
             skill_names=self.get_skill_names(),
             memory=memory_context,
+            mode=mode
         )
-        # Phase 6: Use Distributed Cognitive Stack
-        return await self.cognitive_stack.process(prompt, system_prompt=system)
+        # Phase 6: Use Distributed Cognitive Stack — pass clean prompt (prefix stripped)
+        response, trace = await self.cognitive_stack.process(clean_prompt, system_prompt=system)
+        return response, trace
 
     async def _handle_write_file(self, task: str) -> Optional[str]:
         """Use LLM to generate content, then write it with FileSkill."""
@@ -175,7 +205,7 @@ class BaseAgent:
             f"- Start directly with the first line of the file (e.g. 'import ...' or '\"\"\" ...')\n"
             f"- Include complete, working code — no TODO stubs or placeholders"
         )
-        content = await self._llm_generate(gen_prompt)
+        content, _ = await self._llm_generate(gen_prompt)
 
         # Clean: strip markdown fences
         content = re.sub(r'^```[\w]*\n?', '', content, flags=re.MULTILINE)
@@ -194,7 +224,6 @@ class BaseAgent:
         result = write_fn(filename, content)
         preview = content[:400] + ('...' if len(content) > 400 else '')
         return f"{result}\n\n📄 **Preview** `{filename}` ({len(content):,} bytes):\n```\n{preview}\n```"
-        return f"{result}\n\nPreview `{filename}` ({len(content):,} bytes):\n```\n{preview}\n```"
 
     async def _handle_read_file(self, task: str) -> Optional[str]:
         read_fn = self._get_skill("read_file")
@@ -251,7 +280,7 @@ class BaseAgent:
             f"installation steps, usage examples, API endpoints, and contributing guidelines. "
             f"Output ONLY the markdown content, no code fences."
         )
-        content = await self._llm_generate(readme_prompt)
+        content, _ = await self._llm_generate(readme_prompt)
         content = re.sub(r'^```[\w]*\n?', '', content, flags=re.MULTILINE)
         content = re.sub(r'\n?```$', '', content, flags=re.MULTILINE)
 
@@ -464,7 +493,7 @@ class BaseAgent:
 
         executed = []
 
-        # Pattern 1 — WRITE_FILE: filename\n```[lang]\n<content>\n```
+        # Pattern 1a — WRITE_FILE: filename\n```[lang]\n<content>\n```  (backtick style)
         # (Flexible: allows tag before or after the code block)
         write_pattern = re.compile(
             r'^\s*WRITE_FILE:\s*(\S+)[\s\S]*?```[\w]*\n([\s\S]*?)\n?```|```[\w]*\n([\s\S]*?)\n?```[\s\S]*?^\s*WRITE_FILE:\s*(\S+)',
@@ -485,6 +514,22 @@ class BaseAgent:
             executed.append(f"[OK] {result} ({len(content):,} bytes)")
             
             # Phase 5: Register with Pipeline
+            from swarm_v2.core.artifact_pipeline import get_artifact_pipeline
+            get_artifact_pipeline().register_artifact(filename, created_by=self.persona.name)
+
+        # Pattern 1b — WRITE_FILE: filename\n[START]\n<content>\n[END]  (marker style for 1b model)
+        write_marker_pattern = re.compile(
+            r'^\s*WRITE_FILE:\s*(\S+)\s*\n\[START\]\n([\s\S]*?)\n?\[END\]',
+            re.MULTILINE
+        )
+        for m in write_marker_pattern.finditer(response):
+            filename = m.group(1).strip()
+            content = m.group(2).rstrip()
+            if not filename.endswith(('.md', '.txt', '.json', '.yml', '.yaml', '.html', '.css', '.sh')):
+                header = f"# Generated by {self.persona.name} ({self.persona.role})\n"
+                content = header + content
+            result = write_fn(filename, content)
+            executed.append(f"[OK] {result} ({len(content):,} bytes)")
             from swarm_v2.core.artifact_pipeline import get_artifact_pipeline
             get_artifact_pipeline().register_artifact(filename, created_by=self.persona.name)
 
@@ -566,7 +611,14 @@ class BaseAgent:
                     target_agent._recursion_depth = self._recursion_depth + 1
                     self.log_nodal_activity(f"DELEGATING to {role}: {sub_task[:40]}")
                     try:
-                        sub_response = await target_agent.process_task(sub_task, sender=self.persona.name)
+                        sub_resp_obj = await target_agent.process_task(sub_task, sender=self.persona.name)
+                        
+                        # Handle dict vs string return from process_task
+                        if isinstance(sub_resp_obj, dict):
+                            sub_response = sub_resp_obj.get("response", "[No Response Content]")
+                        else:
+                            sub_response = sub_resp_obj
+                            
                         executed.append(f"Delegated to {role}: {sub_task[:100]}\nResult: {sub_response[:300]}...")
                     except Exception as e:
                         executed.append(f"Failed delegation to {role}: {e}")
@@ -626,6 +678,54 @@ class BaseAgent:
 
         return response
 
+    def _is_greeting(self, task: str) -> bool:
+        """Check if the task is a simple greeting that should trigger persona introduction."""
+        task_lower = task.lower().strip()
+        
+        # Get just the first word/phrase to check for greeting
+        first_word = task_lower.split()[0] if task_lower.split() else ""
+        
+        # Greeting patterns - simple greetings without complex tasks
+        greeting_patterns = [
+            "hello", "hi", "hey", "hiya", "howdy", "greetings",
+            "what's up", "whats up", "wassup", "sup",
+        ]
+        
+        # Also check for greeting questions (first 15 chars to catch "who are you" etc)
+        short_check = task_lower[:15] if len(task_lower) >= 15 else task_lower
+        
+        # Check if it starts with a greeting OR is a greeting question
+        is_greeting = any(pattern in task_lower for pattern in greeting_patterns)
+        is_greeting_question = any(q in short_check for q in ["who are you", "who r u", "what is your name", "tell me ab"])
+        
+        # Make sure there's no actual task - this should be purely conversational
+        task_keywords = ["write", "create", "build", "implement", "fix", "bug", "error", 
+                       "help", "search", "find", "make", "generate", "code", "file",
+                       "read", "list", "show", "get", "do", "run", "test", "craft",
+                       "proposal", "response"]
+        has_task = any(kw in task_lower for kw in task_keywords)
+        
+        return (is_greeting or is_greeting_question) and not has_task
+
+    def _generate_greeting(self) -> str:
+        """Generate a persona-appropriate greeting."""
+        greetings = {
+            "Archi": "Hello! I'm Archi, your Architect. I specialize in system design, scalable architecture, and infrastructure planning. How can I help design your next system?",
+            "Devo": "Hey! I'm Devo, Lead Developer. I love building clean, elegant code. What should we create today?",
+            "Seeker": "Greetings! I'm Seeker, your Researcher. I excel at finding information and synthesizing knowledge. What would you like to explore?",
+            "Logic": "Hello. I'm Logic, specialized in complex reasoning, algorithms, and mathematical deductions. What problem shall we solve?",
+            "Shield": "Hello. I'm Shield, your Security Auditor. I identify vulnerabilities and ensure robust security. What needs auditing?",
+            "Flow": "Hey there! I'm Flow, DevOps Engineer. I handle CI/CD, containers, and cloud deployments. Ready to deploy something?",
+            "Vision": "Hi! I'm Vision, UI/UX Designer. I craft beautiful, accessible interfaces. What should we design?",
+            "Verify": "Hello! I'm Verify, QA Engineer. I test, find bugs, and ensure quality. What should we verify?",
+            "Orchestra": "Greetings! I'm Orchestra, Swarm Manager. I coordinate agent teams and optimize task delegation. What needs orchestrating?",
+            "Scribe": "Hello! I'm Scribe, Technical Writer. I create clear documentation and tutorials. What should we document?",
+            "Bridge": "Hey! I'm Bridge, Integration Specialist. I connect APIs, protocols, and tools. What integrations do you need?",
+            "Pulse": "Hello! I'm Pulse, Data Analyst. I process data and generate insights. What data should we analyze?",
+        }
+        return greetings.get(self.persona.name, 
+            f"Hello! I'm {self.persona.name}, a {self.persona.role}. I specialize in {', '.join(self.persona.specialties[:2])}. How can I help?")
+
     async def process_task(self, task: str, sender: str = "user") -> str:
         # Update Mesh Heartbeat
         if hasattr(self, "mesh_node_id") and self.mesh_node_id:
@@ -636,9 +736,19 @@ class BaseAgent:
                 pass
 
         # Reset logs and recursion depth for new external task
-        if sender == "user" or sender == "self": 
+        sender_clean = str(sender).lower()
+        if sender_clean == "user" or sender_clean == "self": 
             self.nodal_logs = []
             self._recursion_depth = 0
+            # PERSISTENCE FIX: Register the user turn in memory so the agent knows what was asked
+            self.memory.add_turn("user", task)
+        
+        # Handle greeting BEFORE other routing - respond immediately to simple greetings
+        if sender_clean == "user" and self._is_greeting(task):
+            self.log_nodal_activity(f"Greeting detected from user: {task[:20]}")
+            greeting_response = self._generate_greeting()
+            self.memory.add_turn("agent", greeting_response, role=self.persona.name)
+            return greeting_response
 
         # Phase 4: Submit to Task Arbiter for resource orchestration
         from swarm_v2.core.task_arbiter import route_task_to_arbiter
@@ -666,16 +776,56 @@ class BaseAgent:
 
             # 2. Pure LLM response + action-tag execution
             self.log_nodal_activity("Engaging LLM Brain for reasoning...")
-            response = await self._llm_generate(f"[MESH] {task}")
+            
+            # === SMART PREFIXING: ground the model in action vs. chat mode ===
+            # Detect if the task is action-oriented (output files, search, etc.)
+            action_keywords = ["write", "create", "build", "implement", "scan", "perform", "run",
+                               "save", "generate", "make", "produce", "execute", "proceed"]
+            task_lower = task.lower()
+            is_action_task = any(kw in task_lower for kw in action_keywords)
+            
+            if sender_clean == "user" and is_action_task:
+                # Label the mode; tag instructions live in the system prompt only
+                prefix_msg = f"[ACTION] {task}"
+            elif sender_clean == "user":
+                prefix_msg = f"[CHAT] {task}"
+            else:
+                prefix_msg = f"[MESH] {task}"
+            
+            try:
+                # PHASE 6: Strict timeout to prevent dashboard/socket hangs
+                response_data = await asyncio.wait_for(
+                    self._llm_generate(prefix_msg),
+                    timeout=45.0
+                )
+                response, reasoning_trace = response_data
+            except asyncio.TimeoutError:
+                self.log_nodal_activity("LLM Timeout detected. Applying safe fallback.")
+                response = f"I'm sorry, my neural core ({self.persona.model or 'Gemma'}) is currently over-taxed. Please repeat the request or check system resources."
+                reasoning_trace = "[TIMEOUT_EXCEEDED]"
+            
             self.log_nodal_activity("Commencing execution of action tags...")
             response = await self._execute_action_tags(response)
             
-            # Phase 5: Autonomous Refactoring Loop
-            # Only trigger for external or self-initiated tasks to avoid internal infinite loops
-            if sender in ["user", "self"]:
+            self.memory.add_turn("agent", response[:300], role=self.persona.name)
+            self.memory.add_task_result(task[:60], response[:200])
+            self._contribute_to_global_memory(task, response)
+            
+            # Pack reasoning metadata if available
+            metadata = {
+                "name": self.persona.name,
+                "role": self.persona.role
+            }
+            if reasoning_trace:
+                metadata["reasoning_trace"] = reasoning_trace
+
+            # Refactoring Loop (moved up to be reachable)
+            if sender_clean in ["user", "self"]:
                 from swarm_v2.core.artifact_pipeline import get_artifact_pipeline
                 pipeline = get_artifact_pipeline()
-                
+                if pipeline.has_pending_reviews():
+                    self.log_nodal_activity("Detected pending artifacts. Queuing for dashboard review.")
+
                 # Check for code artifacts needing verification
                 # Identify which files were actually written
                 written_files = []
@@ -723,11 +873,15 @@ class BaseAgent:
                         await verify_agent.process_task(verify_task, sender=self.persona.name)
 
             self.log_nodal_activity("Task execution complete.")
-            self.memory.add_turn("agent", response[:300], role=self.persona.name)
-            self.memory.add_task_result(task[:60], response[:200])
-            if len(response) > 100:
-                self._contribute_to_global_memory(task, response)
-            result = response
+            # PERSISTENCE: turns were already added during skill match or initial pre-processing
+            # We only return the final result here.
+            
+            if reasoning_trace:
+                return {
+                    "response": response,
+                    "reasoning_trace": reasoning_trace,
+                    "metadata": metadata
+                }
             return response
         except Exception as e:
             error = str(e)
@@ -759,7 +913,13 @@ class BaseAgent:
             f"Example:\nWRITE_FILE: filename.py\n```python\n(fixed code)\n```\n"
             f"DO NOT just provide a text explanation. You MUST emit the tag."
         )
-        response = await self._llm_generate(remediation_prompt)
+        response_data = await self._llm_generate(remediation_prompt)
+        # Handle tuple return from _llm_generate
+        if isinstance(response_data, tuple):
+            response, trace = response_data
+        else:
+            response, trace = response_data, None
+            
         return await self._execute_action_tags(response)
 
     # ═══════════════════════════════════════════════════════════════════════════

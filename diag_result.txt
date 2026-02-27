@@ -1,0 +1,26 @@
+2026-02-25 13:22:52,493 [INFO] [Arbiter] Registered maintenance task: maint_memory_pruning (interval: 300s)
+2026-02-25 13:22:52,493 [INFO] [Arbiter] Registered maintenance task: maint_log_rotation (interval: 3600s)
+2026-02-25 13:22:52,493 [INFO] [Arbiter] Registered maintenance task: maint_cache_cleanup (interval: 600s)
+2026-02-25 13:22:52,493 [INFO] [Arbiter] Registered maintenance task: maint_metrics_collection (interval: 60s)
+2026-02-25 13:22:52,493 [INFO] [Arbiter] Registered maintenance task: maint_health_check (interval: 30s)
+2026-02-25 13:22:52,493 [INFO] [Arbiter] Registered maintenance task: maint_garbage_collection (interval: 180s)
+2026-02-25 13:22:52,493 [INFO] [Arbiter] Registered maintenance task: maint_index_optimization (interval: 7200s)
+2026-02-25 13:22:52,493 [INFO] [Arbiter] Registered maintenance task: maint_temp_file_cleanup (interval: 1800s)
+2026-02-25 13:22:52,493 [INFO] [Arbiter] TaskArbiter initialized: 24 logical cores, 12 physical cores
+2026-02-25 13:22:52,493 [INFO] [Arbiter] Registered agent Architect (1759907056672) for None with CPU affinity: [12, 13]
+2026-02-25 13:22:52,493 [INFO] [Arbiter] Task 1759907056672_1772043772 submitted with priority 11
+2026-02-25 13:22:52,494 [INFO] [Arbiter] Task 1759907056672_1772043772 submitted: complexity=high, target=gpu_model
+2026-02-25 13:22:53,531 [INFO] [Arbiter] [Stack:Archi] Offloading to TRM Reasoning Core...
+2026-02-25 13:22:57,493 [INFO] [Arbiter] [Stack:Archi] TRM Cluster Analysis: [INS->INS->VAL->EXT->VAL->INF->RMT->RMT->VAL->ANA->VAL->ANA]
+2026-02-25 13:22:57,894 [INFO] [Arbiter] HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-25 13:22:57,915 [INFO] [Arbiter] Task 1759907056672_1772043772 completed successfully
+Initializing Archi test...
+[TRM Brain] Initializing on cpu...
+[TRM Brain] Model loaded from tiny-recursive-weights/step_155718
+Simulating task processing...
+[GlobalMemory] ChromaDB NOT FOUND - Falling back to Legacy Mode
+[LLM Brain] Executive Compression for gemma3:270m: 2436 -> 394 chars
+Result Type: <class 'dict'>
+Response: Okay, I understand. I will analyze the architecture and provide a summary based on my internal reaso...
+Reasoning Trace:
+TRM_NODES: [INS->INS->VAL->EXT->VAL->INF->RMT->RMT->VAL->ANA->VAL->ANA]

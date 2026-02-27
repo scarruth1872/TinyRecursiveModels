@@ -5,7 +5,7 @@
       "name": "Secondary Swarm",
       "host": "localhost",
       "port": 8002,
-      "status": "online",
+      "status": "offline",
       "last_seen": "2026-02-22T21:29:00.403166",
       "capabilities": [
         "memory_sync",
@@ -15,5 +15,5 @@
       "memory_count": 0
     }
   ],
-  "last_updated": "2026-02-22T21:29:00.403166"
+  "last_updated": "2026-02-27T09:57:17.522624"
 }

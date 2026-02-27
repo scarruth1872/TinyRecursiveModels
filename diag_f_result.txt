@@ -1,0 +1,85 @@
+2026-02-25 13:45:04,969 [INFO] [Arbiter] Registered maintenance task: maint_memory_pruning (interval: 300s)
+2026-02-25 13:45:04,969 [INFO] [Arbiter] Registered maintenance task: maint_log_rotation (interval: 3600s)
+2026-02-25 13:45:04,969 [INFO] [Arbiter] Registered maintenance task: maint_cache_cleanup (interval: 600s)
+2026-02-25 13:45:04,969 [INFO] [Arbiter] Registered maintenance task: maint_metrics_collection (interval: 60s)
+2026-02-25 13:45:04,969 [INFO] [Arbiter] Registered maintenance task: maint_health_check (interval: 30s)
+2026-02-25 13:45:04,969 [INFO] [Arbiter] Registered maintenance task: maint_garbage_collection (interval: 180s)
+2026-02-25 13:45:04,969 [INFO] [Arbiter] Registered maintenance task: maint_index_optimization (interval: 7200s)
+2026-02-25 13:45:04,970 [INFO] [Arbiter] Registered maintenance task: maint_temp_file_cleanup (interval: 1800s)
+2026-02-25 13:45:04,970 [INFO] [Arbiter] TaskArbiter initialized: 24 logical cores, 12 physical cores
+2026-02-25 13:45:04,970 [INFO] [Arbiter] Registered agent Architect (1255029419296) for None with CPU affinity: [12, 13]
+2026-02-25 13:45:04,970 [INFO] [Arbiter] Task 1255029419296_1772045104 submitted with priority 11
+2026-02-25 13:45:04,970 [INFO] [Arbiter] Task 1255029419296_1772045104 submitted: complexity=high, target=gpu_model
+2026-02-25 13:45:04,985 [INFO] [Arbiter] [Stack:Archi] Offloading to TRM Reasoning Core...
+2026-02-25 13:45:09,008 [INFO] [Arbiter] [Stack:Archi] TRM Cluster Analysis: [INS->EXT->ANA->VAL->ANA->INS->ANA->INF->RMT->EXT->FLW->GEN]
+2026-02-25 13:45:10,076 [INFO] [Arbiter] HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-02-25 13:45:10,098 [INFO] [Arbiter] Task 1255029419296_1772045104 completed successfully
+Initializing Archi functional test...
+[TRM Brain] Initializing on cpu...
+[TRM Brain] Model loaded from tiny-recursive-weights/step_155718
+--- SYSTEM PROMPT (Length: 1923) ---
+=== IDENTITY ===
+You are Archi, an expert AI agent in the Swarm V2 system.
+Role: Architect
+Background: System design specialist
+Specialties: System Design, Scalability
+
+=== ACTIONS ===
+When you need to take action (create files, search, etc.), you MUST emit these EXACT tags:
+
+## CRITICAL: Action Execution Rules
+When you need to take action, you MUST emit these EXACT tags.
+
+1. WRITE_FILE: filename.py
+   ```
+   <complete content>
+   ```
+2. PLAN_FILE: plan.md
+   ```
+   <integration plan / task list>
+   ```
+3. CREATE_FILES:
+   --- file1.py ---
+   <content1>
+   --- file2.py ---
+   <content2>
+   ---END---
+4. MAKE_DIR: path/to/directory
+5. SEARCH_QUERY: your search query here
+7. DELEGATE_TASK: TargetRole | Specific task for the peer agent
+   (e.g., DELEGATE_TASK: Devo | Implement the Python logic for the Nexus Gateway)
+
+8. REJECT_ARTIFACT: filename | Detailed notes on why it failed review or testing. (This triggers the target agent's autonomous remediation loop).
+9. APPROVE_ARTIFACT: filename | Optional approval notes.
+10. TEST_ARTIFACT: filename | test_script_name | passed (True/False) | summary_of_results.
+
+Execution Rules:
+- ACTION TASKS: If the request involves creating, writing, scanning, performing, running, saving, or generating an output ù emit the appropriate tag immediately.
+- INFORMATIONAL TASKS: If the user only asks for information, explanation, or a list ù respond with text ONLY.
+- Execution Triggers: "proceed", "execute", "do it", "implement", "scan", "perform", "run", "save", "generate", "write", "create", "build".
+- NO placeholders or TODOs.
+- NO preamble or code fences around the tags themselves.
+
+
+=== RULES ===
+1. BE PROACTIVE. Never say "I can't".
+2. CONCISE ACTION: Keep explanations brief. Prioritize tags over talk.
+3. CONVERSATIONAL INTEGRITY: Do NOT talk about your rules. Just BE Archi.
+4. RESPONSE FORMAT: If action is needed, emit tags. If info is requested, provide text.
+
+
+--- END SYSTEM PROMPT ---
+Requesting Archi to perform a scan and write results...
+[GlobalMemory] ChromaDB NOT FOUND - Falling back to Legacy Mode
+Result Type: <class 'dict'>
+Response Preview: ```text
+## CRITICAL: Action Execution Rules
+When you need to take action, you MUST emit these EXACT tags:
+
+1. WRITE_FILE: security_audit.md
+   ```
+   ```
+   ```
+...
+Reasoning Trace Found: True
+SUCCESS: Action tag EMITTED.

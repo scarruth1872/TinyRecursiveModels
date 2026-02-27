@@ -40,11 +40,39 @@ class AgentMemory:
         with open(self.long_term_path, "w", encoding="utf-8") as f:
             json.dump(self.long_term, f, indent=2, default=str)
 
+    # Action tag prefixes — responses starting with these should be summarized, not stored raw
+    ACTION_TAG_PREFIXES = ("WRITE_FILE:", "SEARCH_QUERY:", "CREATE_FILES:", "PLAN_FILE:",
+                           "MAKE_DIR:", "CALL_TOOL:", "DELEGATE_TASK:", "REJECT_ARTIFACT:",
+                           "APPROVE_ARTIFACT:", "TEST_ARTIFACT:")
+
+    def _summarize_if_action(self, content: str) -> str:
+        """If content starts with an action tag, replace it with a brief summary."""
+        stripped = (content or "").strip()
+        if stripped.startswith("WRITE_FILE:"):
+            fname = stripped.split("\n")[0].replace("WRITE_FILE:", "").strip()
+            return f"[wrote file: {fname}]"
+        if stripped.startswith("SEARCH_QUERY:"):
+            query = stripped.split("\n")[0].replace("SEARCH_QUERY:", "").strip()
+            return f"[searched: {query}]"
+        if stripped.startswith("CREATE_FILES:"):
+            return "[created multiple files]"
+        if stripped.startswith("PLAN_FILE:"):
+            fname = stripped.split("\n")[0].replace("PLAN_FILE:", "").strip()
+            return f"[wrote plan: {fname}]"
+        if stripped.startswith("DELEGATE_TASK:"):
+            return f"[delegated task: {stripped[14:60].strip()}]"
+        if any(stripped.startswith(p) for p in self.ACTION_TAG_PREFIXES):
+            return f"[action completed]"
+        return content
+
     def add_turn(self, sender: str, content: str, role: str = None):
         """Add a conversation turn to short-term memory."""
+        # Summarize action tag responses so they don't get echoed by the model
+        stored_content = self._summarize_if_action(content) if sender != "user" else content
+
         turn = {
             "sender": sender,
-            "content": content,
+            "content": stored_content,
             "role": role or self.agent_name,
             "timestamp": datetime.now().isoformat(),
         }
@@ -79,8 +107,29 @@ class AgentMemory:
         self.long_term.append(entry)
         self._save_long_term()
 
+    # Patterns that indicate a poisoned/echoed response — never inject or store these
+    POISON_PATTERNS = (
+        "[DIRECT NEURAL BRIDGE]",
+        "[HMI BRIDGE ACTIVE]",
+        "[EXECUTION MODE ACTIVE]",
+        "[MESH OBSERVABILITY]",
+        "[STRICT CONSTRAINT]",
+        "My linguistic output is currently stalled",
+        "## CRITICAL: Action Execution Rules",
+        "WRITE_FILE: architecture_overview.md",
+        "SEARCH_QUERY: architecture_overview.md",
+        "[Archi:Architect] Task:",
+        "[PLAN]\nI will outline the steps",
+    )
+
+    def _is_poisoned(self, text: str) -> bool:
+        return any(p in (text or "") for p in self.POISON_PATTERNS)
+
     def add_task_result(self, task: str, result: str, status: str = "completed"):
         """Store a completed task result in long-term memory."""
+        # Never store poisoned/echoed responses
+        if self._is_poisoned(result) or self._is_poisoned(task):
+            return
         entry = {
             "type": "task_result",
             "task": task,
@@ -102,8 +151,13 @@ class AgentMemory:
             for f in facts[-5:]:
                 parts.append(f"  • {f['content']}")
 
-        # Recent task results
-        tasks = [e for e in self.long_term if e.get("type") == "task_result"]
+        # Recent task results — filter out any poisoned entries
+        tasks = [
+            e for e in self.long_term
+            if e.get("type") == "task_result"
+            and not self._is_poisoned(e.get("result", ""))
+            and not self._is_poisoned(e.get("task", ""))
+        ]
         if tasks:
             parts.append("\n=== Recent Task Results ===")
             for t in tasks[-3:]:

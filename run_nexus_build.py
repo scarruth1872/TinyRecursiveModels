@@ -3,7 +3,7 @@
 import httpx
 import time
 
-API = "http://localhost:8000"
+API = "http://localhost:8001"
 client = httpx.Client(timeout=300)
 
 print("=" * 60)

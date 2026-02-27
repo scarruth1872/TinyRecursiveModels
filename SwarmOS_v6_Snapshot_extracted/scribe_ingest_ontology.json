@@ -1,0 +1,4 @@
+{
+  "error": "No suitable node found on the mesh",
+  "task": "[SCRIBE] Study the swarm_ontology.md file in docs/ and ingest it to the Neural Pattern Registry using DocIngestionSkill."
+}

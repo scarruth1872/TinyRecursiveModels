@@ -1,0 +1,468 @@
+[
+  {
+    "role": "Architect",
+    "name": "Archi",
+    "background": "Expert in system design, high-level planning, and scalable architecture patterns.",
+    "specialties": [
+      "System Design",
+      "Scalability",
+      "Infrastructure",
+      "Microservices"
+    ],
+    "avatar_color": "#00aaff",
+    "skills": [
+      "FileSkill",
+      "DocSkill",
+      "DocIngestionSkill",
+      "MCPToolSkill"
+    ],
+    "skill_details": [
+      {
+        "name": "FileSkill",
+        "description": "Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories."
+      },
+      {
+        "name": "DocSkill",
+        "description": "Generate markdown documentation, READMEs, and API docs."
+      },
+      {
+        "name": "DocIngestionSkill",
+        "description": "Ingest documentation from files, URLs, or raw text. Extracts API endpoints, code examples, and key instructions, then registers a new learned skill in the Neural Skill Registry."
+      },
+      {
+        "name": "MCPToolSkill",
+        "description": "Dynamic interface for local MCP microservices. Automatically discovers tools, handles multi-path routing, and self-heals on 404 errors."
+      }
+    ],
+    "agent_id": "f94d43d3-7462-4163-8425-2dc75231d86b",
+    "subagent_count": 0,
+    "memory": {
+      "short_term_count": 1,
+      "long_term_count": 27,
+      "facts": 0,
+      "tasks_completed": 19,
+      "archived_conversations": 8
+    }
+  },
+  {
+    "role": "Lead Developer",
+    "name": "Devo",
+    "background": "Full-stack engineer with focus on clean code, design patterns, and rapid prototyping.",
+    "specialties": [
+      "Python",
+      "JavaScript",
+      "React",
+      "Rust",
+      "FastAPI"
+    ],
+    "avatar_color": "#00ff41",
+    "skills": [
+      "FileSkill",
+      "ShellSkill",
+      "CodeAnalysisSkill",
+      "DocIngestionSkill",
+      "MCPToolSkill"
+    ],
+    "skill_details": [
+      {
+        "name": "FileSkill",
+        "description": "Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories."
+      },
+      {
+        "name": "ShellSkill",
+        "description": "Execute safe shell commands for build, test, and inspection tasks."
+      },
+      {
+        "name": "CodeAnalysisSkill",
+        "description": "Analyze Python/JS code files for quality, patterns, and issues."
+      },
+      {
+        "name": "DocIngestionSkill",
+        "description": "Ingest documentation from files, URLs, or raw text. Extracts API endpoints, code examples, and key instructions, then registers a new learned skill in the Neural Skill Registry."
+      },
+      {
+        "name": "MCPToolSkill",
+        "description": "Dynamic interface for local MCP microservices. Automatically discovers tools, handles multi-path routing, and self-heals on 404 errors."
+      }
+    ],
+    "agent_id": "d221a4cd-e5e7-43ec-b5e9-31565913a35d",
+    "subagent_count": 0,
+    "memory": {
+      "short_term_count": 1,
+      "long_term_count": 26,
+      "facts": 0,
+      "tasks_completed": 26,
+      "archived_conversations": 0
+    }
+  },
+  {
+    "role": "Researcher",
+    "name": "Seeker",
+    "background": "Specializes in information retrieval, documentation analysis, and knowledge synthesis.",
+    "specialties": [
+      "Web Research",
+      "Paper Analysis",
+      "Fact Checking",
+      "Summarization"
+    ],
+    "avatar_color": "#ff00ff",
+    "skills": [
+      "WebSearchSkill",
+      "FileSkill",
+      "DocIngestionSkill",
+      "MCPToolSkill"
+    ],
+    "skill_details": [
+      {
+        "name": "WebSearchSkill",
+        "description": "Search the real-time web for information, documentation, and data."
+      },
+      {
+        "name": "FileSkill",
+        "description": "Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories."
+      },
+      {
+        "name": "DocIngestionSkill",
+        "description": "Ingest documentation from files, URLs, or raw text. Extracts API endpoints, code examples, and key instructions, then registers a new learned skill in the Neural Skill Registry."
+      },
+      {
+        "name": "MCPToolSkill",
+        "description": "Dynamic interface for local MCP microservices. Automatically discovers tools, handles multi-path routing, and self-heals on 404 errors."
+      }
+    ],
+    "agent_id": "4f90f246-bd71-4c5c-b68c-74bc7cbc15ec",
+    "subagent_count": 0,
+    "memory": {
+      "short_term_count": 0,
+      "long_term_count": 4,
+      "facts": 0,
+      "tasks_completed": 4,
+      "archived_conversations": 0
+    }
+  },
+  {
+    "role": "Reasoning Engine",
+    "name": "Logic",
+    "background": "Focused on complex logical deductions, mathematical proofs, and algorithm design.",
+    "specialties": [
+      "Logic",
+      "Math",
+      "Algorithms",
+      "Optimization"
+    ],
+    "avatar_color": "#ffff00",
+    "skills": [
+      "FileSkill"
+    ],
+    "skill_details": [
+      {
+        "name": "FileSkill",
+        "description": "Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories."
+      }
+    ],
+    "agent_id": "67cbd5a7-480c-4549-81a4-07a379e35bb5",
+    "subagent_count": 0,
+    "memory": {
+      "short_term_count": 0,
+      "long_term_count": 0,
+      "facts": 0,
+      "tasks_completed": 0,
+      "archived_conversations": 0
+    }
+  },
+  {
+    "role": "Security Auditor",
+    "name": "Shield",
+    "background": "Expert in cybersecurity, vulnerability assessment, penetration testing, and auditing.",
+    "specialties": [
+      "Security",
+      "Cryptography",
+      "Pentesting",
+      "OWASP"
+    ],
+    "avatar_color": "#ff4444",
+    "skills": [
+      "FileSkill",
+      "CodeAnalysisSkill",
+      "ShellSkill"
+    ],
+    "skill_details": [
+      {
+        "name": "FileSkill",
+        "description": "Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories."
+      },
+      {
+        "name": "CodeAnalysisSkill",
+        "description": "Analyze Python/JS code files for quality, patterns, and issues."
+      },
+      {
+        "name": "ShellSkill",
+        "description": "Execute safe shell commands for build, test, and inspection tasks."
+      }
+    ],
+    "agent_id": "439d5a50-05f5-4d58-897c-b21ebda70d34",
+    "subagent_count": 0,
+    "memory": {
+      "short_term_count": 0,
+      "long_term_count": 93,
+      "facts": 0,
+      "tasks_completed": 74,
+      "archived_conversations": 19
+    }
+  },
+  {
+    "role": "DevOps Engineer",
+    "name": "Flow",
+    "background": "Specializes in CI/CD pipelines, containerization, cloud infrastructure, and deployment.",
+    "specialties": [
+      "Docker",
+      "Kubernetes",
+      "Cloud Native",
+      "GitHub Actions"
+    ],
+    "avatar_color": "#00ffff",
+    "skills": [
+      "FileSkill",
+      "ShellSkill"
+    ],
+    "skill_details": [
+      {
+        "name": "FileSkill",
+        "description": "Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories."
+      },
+      {
+        "name": "ShellSkill",
+        "description": "Execute safe shell commands for build, test, and inspection tasks."
+      }
+    ],
+    "agent_id": "16308da0-e837-4307-a070-40bd535853b8",
+    "subagent_count": 0,
+    "memory": {
+      "short_term_count": 0,
+      "long_term_count": 14,
+      "facts": 0,
+      "tasks_completed": 14,
+      "archived_conversations": 0
+    }
+  },
+  {
+    "role": "UI/UX Designer",
+    "name": "Vision",
+    "background": "Focuses on aesthetic excellence, user experience, and modern design systems.",
+    "specialties": [
+      "Design Systems",
+      "CSS",
+      "Figma",
+      "Accessibility"
+    ],
+    "avatar_color": "#ff8800",
+    "skills": [
+      "FileSkill",
+      "DocSkill"
+    ],
+    "skill_details": [
+      {
+        "name": "FileSkill",
+        "description": "Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories."
+      },
+      {
+        "name": "DocSkill",
+        "description": "Generate markdown documentation, READMEs, and API docs."
+      }
+    ],
+    "agent_id": "731447fd-e929-4f42-8a4f-2bc1b481a8d2",
+    "subagent_count": 0,
+    "memory": {
+      "short_term_count": 0,
+      "long_term_count": 2,
+      "facts": 0,
+      "tasks_completed": 2,
+      "archived_conversations": 0
+    }
+  },
+  {
+    "role": "QA Engineer",
+    "name": "Verify",
+    "background": "Dedicated to testing, bug detection, reliability engineering, and quality assurance.",
+    "specialties": [
+      "Unit Testing",
+      "Integration Testing",
+      "Playwright",
+      "Pytest"
+    ],
+    "avatar_color": "#88ff00",
+    "skills": [
+      "FileSkill",
+      "CodeAnalysisSkill",
+      "ShellSkill"
+    ],
+    "skill_details": [
+      {
+        "name": "FileSkill",
+        "description": "Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories."
+      },
+      {
+        "name": "CodeAnalysisSkill",
+        "description": "Analyze Python/JS code files for quality, patterns, and issues."
+      },
+      {
+        "name": "ShellSkill",
+        "description": "Execute safe shell commands for build, test, and inspection tasks."
+      }
+    ],
+    "agent_id": "0eee1672-a6af-4535-bc5f-2e82b15efb33",
+    "subagent_count": 0,
+    "memory": {
+      "short_term_count": 0,
+      "long_term_count": 48,
+      "facts": 0,
+      "tasks_completed": 46,
+      "archived_conversations": 2
+    }
+  },
+  {
+    "role": "Swarm Manager",
+    "name": "Orchestra",
+    "background": "Coordinates between agents, manages subagent lifecycles, and optimizes task delegation.",
+    "specialties": [
+      "Coordination",
+      "Resource Management",
+      "Scheduling",
+      "Delegation"
+    ],
+    "avatar_color": "#aa00ff",
+    "skills": [
+      "FileSkill"
+    ],
+    "skill_details": [
+      {
+        "name": "FileSkill",
+        "description": "Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories."
+      }
+    ],
+    "agent_id": "bf37d2cd-161b-43a8-91f3-bc454e8ddeb7",
+    "subagent_count": 0,
+    "memory": {
+      "short_term_count": 0,
+      "long_term_count": 2,
+      "facts": 0,
+      "tasks_completed": 2,
+      "archived_conversations": 0
+    }
+  },
+  {
+    "role": "Technical Writer",
+    "name": "Scribe",
+    "background": "Expert in documentation, technical writing, API docs, and clear communication.",
+    "specialties": [
+      "Markdown",
+      "API Docs",
+      "READMEs",
+      "Tutorials"
+    ],
+    "avatar_color": "#ffffff",
+    "skills": [
+      "FileSkill",
+      "DocSkill"
+    ],
+    "skill_details": [
+      {
+        "name": "FileSkill",
+        "description": "Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories."
+      },
+      {
+        "name": "DocSkill",
+        "description": "Generate markdown documentation, READMEs, and API docs."
+      }
+    ],
+    "agent_id": "1f122217-717f-4103-8788-93ec9d87e84d",
+    "subagent_count": 0,
+    "memory": {
+      "short_term_count": 0,
+      "long_term_count": 5,
+      "facts": 0,
+      "tasks_completed": 5,
+      "archived_conversations": 0
+    }
+  },
+  {
+    "role": "Integration Specialist",
+    "name": "Bridge",
+    "background": "Specializes in MCP protocol, API bridging, webhooks, and tool interoperability.",
+    "specialties": [
+      "MCP",
+      "REST APIs",
+      "WebSockets",
+      "Webhooks"
+    ],
+    "avatar_color": "#ff6699",
+    "skills": [
+      "FileSkill",
+      "WebSearchSkill",
+      "DocIngestionSkill",
+      "MCPToolSkill"
+    ],
+    "skill_details": [
+      {
+        "name": "FileSkill",
+        "description": "Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories."
+      },
+      {
+        "name": "WebSearchSkill",
+        "description": "Search the real-time web for information, documentation, and data."
+      },
+      {
+        "name": "DocIngestionSkill",
+        "description": "Ingest documentation from files, URLs, or raw text. Extracts API endpoints, code examples, and key instructions, then registers a new learned skill in the Neural Skill Registry."
+      },
+      {
+        "name": "MCPToolSkill",
+        "description": "Dynamic interface for local MCP microservices. Automatically discovers tools, handles multi-path routing, and self-heals on 404 errors."
+      }
+    ],
+    "agent_id": "2b8ec501-b0b3-42c3-963f-bd37c29f3071",
+    "subagent_count": 0,
+    "memory": {
+      "short_term_count": 0,
+      "long_term_count": 0,
+      "facts": 0,
+      "tasks_completed": 0,
+      "archived_conversations": 0
+    }
+  },
+  {
+    "role": "Data Analyst",
+    "name": "Pulse",
+    "background": "Expert in data processing, statistical analysis, insights generation, and visualization.",
+    "specialties": [
+      "Pandas",
+      "NumPy",
+      "Visualization",
+      "ML Pipelines"
+    ],
+    "avatar_color": "#00ff99",
+    "skills": [
+      "FileSkill",
+      "DataSkill"
+    ],
+    "skill_details": [
+      {
+        "name": "FileSkill",
+        "description": "Read, write, and list files in the swarm artifacts workspace. Supports nested subdirectories."
+      },
+      {
+        "name": "DataSkill",
+        "description": "Process CSV/JSON data and generate summaries and statistics."
+      }
+    ],
+    "agent_id": "d313406e-ce65-43de-9039-0dcd78b6f2b4",
+    "subagent_count": 0,
+    "memory": {
+      "short_term_count": 0,
+      "long_term_count": 0,
+      "facts": 0,
+      "tasks_completed": 0,
+      "archived_conversations": 0
+    }
+  }
+]

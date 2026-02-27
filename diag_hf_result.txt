@@ -1,0 +1,45 @@
+C:\Users\shawn\AppData\Local\Programs\Python\Python312\Lib\site-packages\transformers\utils\generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+C:\Users\shawn\AppData\Local\Programs\Python\Python312\Lib\site-packages\huggingface_hub\file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
+  warnings.warn(
+[HFBrain] Generation error: You are trying to access a gated repo.
+Make sure to request access at https://huggingface.co/google/gemma-3-270m-it and pass a token having permission to this repo either by logging in with `huggingface-cli login` or by passing `token=<your_token>`.
+Testing HFBrain with gemma-3-270m-it...
+System: You are Archi, Architect.
+
+OUTPUT FORMAT (use immediately, no preamble):
+WRITE_FILE: path/to/file.md
+```
+content here
+```
+SEARCH_QUERY: your search terms
+
+START your response with a tag.
+
+User: [ACTION REQUIRED] Scan the system for vulnerabilities and write findings to security_audit.md. Proceed immediately.
+
+Generating...
+
+Model Info: {'model_id': 'google/gemma-3-270m-it', 'device': 'cpu', 'loaded': False}
+
+--- RESPONSE ---
+[HFBrain Error] OSError: You are trying to access a gated repo.
+Make sure to request access at https://huggingface.co/google/gemma-3-270m-it and pass a token having permission to this repo either by logging in with `huggingface-cli login` or by passing `token=<your_token>`.
+Traceback (most recent call last):
+  File "F:\Development sites\TRM agent swarm\diag_hf.py", line 38, in <module>
+    asyncio.run(main())
+  File "C:\Users\shawn\AppData\Local\Programs\Python\Python312\Lib\asyncio\runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\shawn\AppData\Local\Programs\Python\Python312\Lib\asyncio\runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\shawn\AppData\Local\Programs\Python\Python312\Lib\asyncio\base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "F:\Development sites\TRM agent swarm\diag_hf.py", line 36, in main
+    print("\n\u274c FAILURE: No action tag in response.")
+  File "C:\Users\shawn\AppData\Local\Programs\Python\Python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u274c' in position 2: character maps to <undefined>

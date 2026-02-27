@@ -1,0 +1,18 @@
+Okay, here’s a task description for the Lead Developer:
+
+**Task:** Integrate Nexus Platform into Swarm V2 – Scalability & Resilience Focus
+
+**Objective:** Seamlessly integrate the Nexus Platform into our existing Swarm V2 architecture, prioritizing scalability and resilience.
+
+**Action Items:**
+
+1.  **Message Queue Upgrade:** Upgrade the existing message queue (currently [Specify Queue Name]) to handle the anticipated Nexus Platform traffic. I’ve drafted a preliminary design in `nexus_architecture.py` – review and confirm.
+2.  **Service Orchestration:** Implement service orchestration using [Specify Orchestration Tool - e.g., Kubernetes] to manage Nexus Platform services.  Ensure auto-scaling is configured based on observed load.
+3.  **API Integration:** Develop the necessary API integrations between Nexus and core Swarm V2 services. Document all endpoints.
+4.  **Monitoring & Logging:** Integrate Nexus Platform metrics and logs into our existing Swarm V2 monitoring and logging infrastructure.
+
+**Deliverables:** Working integration, API documentation, and updated infrastructure diagrams.
+
+**Priority:** High – Critical for Swarm V2’s overall performance.
+
+Let me know if you’d like me to refine this based on specific technology choices.

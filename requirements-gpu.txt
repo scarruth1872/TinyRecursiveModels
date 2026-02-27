@@ -1,0 +1,31 @@
+# GPU Acceleration Requirements for AMD RX 6700 XT on Windows
+# PyTorch with DirectML support
+torch==2.4.1
+torchvision==0.19.1
+torchaudio==2.4.1
+torch-directml==0.2.5.dev240914
+
+# Optional: For monitoring GPU usage
+# pynvml  # NVIDIA only
+# gpustat  # NVIDIA only
+
+# Existing requirements
+adam-atan2
+einops
+tqdm
+coolname
+pydantic
+argdantic
+wandb
+omegaconf
+hydra-core
+huggingface_hub
+packaging
+ninja
+wheel
+setuptools
+setuptools-scm
+pydantic-core
+huggingface_hub
+numba
+triton

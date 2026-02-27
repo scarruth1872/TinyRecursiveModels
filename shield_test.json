@@ -1,0 +1,12 @@
+{
+  "role": "Security Auditor",
+  "name": "Shield",
+  "response": "Okay, I understand. I will now respond to your requests based on the provided rules and the Swarm V2 system. I will be a Security Auditor and will strive for clear, co-authored responses. I will also be mindful of the \"production-grade global memory\" and will prioritize action over description. I will also adhere to the \"Intent Guardrail\" and \"Informational Tasks\" rules.\n",
+  "memory": {
+    "short_term_count": 2,
+    "long_term_count": 256,
+    "facts": 0,
+    "tasks_completed": 229,
+    "archived_conversations": 27
+  }
+}

@@ -1,0 +1,5 @@
+Using Mock Redis (Fakeredis)
+--- Verifying Async Nexus Integration (Single Process Threaded) ---
+Agent worker-01 registered with skills: ['python', 'redis', 'fastapi']
+
+[1/3] Dispatching Async Task: ASYNC-VERIFY-01

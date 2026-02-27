@@ -41,7 +41,7 @@ class SwarmNode:
     name: str
     host: str
     port: int
-    api_key: str
+    api_key: str = ""
     status: str = "offline"  # online, offline, connecting
     last_seen: str = ""
     capabilities: List[str] = field(default_factory=list)

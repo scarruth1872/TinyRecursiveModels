@@ -1,0 +1,368 @@
+{
+  "version": 504,
+  "total_nodes": 12,
+  "alive": 0,
+  "stale": 12,
+  "nodes": [
+    {
+      "node_id": "64c41ea12216",
+      "name": "Archi",
+      "role": "Architect",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "specialties": [
+        "System Design",
+        "Scalability",
+        "Infrastructure",
+        "Microservices"
+      ],
+      "skills": [
+        "FileSkill",
+        "DocSkill",
+        "DocIngestionSkill",
+        "MCPToolSkill"
+      ],
+      "status": "online",
+      "last_heartbeat": 1771594367.4874878,
+      "joined_at": "2026-02-20T08:32:31.051293",
+      "task_count": 0,
+      "latency_ms": 3272372.2
+    },
+    {
+      "node_id": "e1219ab3c690",
+      "name": "Devo",
+      "role": "Lead Developer",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "specialties": [
+        "Python",
+        "JavaScript",
+        "React",
+        "Rust",
+        "FastAPI"
+      ],
+      "skills": [
+        "FileSkill",
+        "ShellSkill",
+        "CodeAnalysisSkill",
+        "DocIngestionSkill",
+        "MCPToolSkill"
+      ],
+      "status": "online",
+      "last_heartbeat": 1771594368.8038304,
+      "joined_at": "2026-02-20T08:32:31.051293",
+      "task_count": 1,
+      "latency_ms": 3271055.8
+    },
+    {
+      "node_id": "08da6c311bdf",
+      "name": "Seeker",
+      "role": "Researcher",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "specialties": [
+        "Web Research",
+        "Paper Analysis",
+        "Fact Checking",
+        "Summarization"
+      ],
+      "skills": [
+        "WebSearchSkill",
+        "FileSkill",
+        "DocIngestionSkill",
+        "MCPToolSkill"
+      ],
+      "status": "online",
+      "last_heartbeat": 1771594351.0518,
+      "joined_at": "2026-02-20T08:32:31.0518",
+      "task_count": 0,
+      "latency_ms": 3288807.9
+    },
+    {
+      "node_id": "8f373e052c29",
+      "name": "Logic",
+      "role": "Reasoning Engine",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "specialties": [
+        "Logic",
+        "Math",
+        "Algorithms",
+        "Optimization"
+      ],
+      "skills": [
+        "FileSkill"
+      ],
+      "status": "online",
+      "last_heartbeat": 1771594351.0518,
+      "joined_at": "2026-02-20T08:32:31.0518",
+      "task_count": 0,
+      "latency_ms": 3288807.9
+    },
+    {
+      "node_id": "c9af0d296bae",
+      "name": "Shield",
+      "role": "Security Auditor",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "specialties": [
+        "Security",
+        "Cryptography",
+        "Pentesting",
+        "OWASP"
+      ],
+      "skills": [
+        "FileSkill",
+        "CodeAnalysisSkill",
+        "ShellSkill"
+      ],
+      "status": "online",
+      "last_heartbeat": 1771594351.0528076,
+      "joined_at": "2026-02-20T08:32:31.052807",
+      "task_count": 0,
+      "latency_ms": 3288806.9
+    },
+    {
+      "node_id": "afbb4bfd6ce0",
+      "name": "Flow",
+      "role": "DevOps Engineer",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "specialties": [
+        "Docker",
+        "Kubernetes",
+        "Cloud Native",
+        "GitHub Actions"
+      ],
+      "skills": [
+        "FileSkill",
+        "ShellSkill"
+      ],
+      "status": "online",
+      "last_heartbeat": 1771594351.0528076,
+      "joined_at": "2026-02-20T08:32:31.052807",
+      "task_count": 0,
+      "latency_ms": 3288806.9
+    },
+    {
+      "node_id": "c0c2a990b48d",
+      "name": "Vision",
+      "role": "UI/UX Designer",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "specialties": [
+        "Design Systems",
+        "CSS",
+        "Figma",
+        "Accessibility"
+      ],
+      "skills": [
+        "FileSkill",
+        "DocSkill"
+      ],
+      "status": "online",
+      "last_heartbeat": 1771594351.0528076,
+      "joined_at": "2026-02-20T08:32:31.052807",
+      "task_count": 0,
+      "latency_ms": 3288806.9
+    },
+    {
+      "node_id": "8b1ee42c7c4c",
+      "name": "Verify",
+      "role": "QA Engineer",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "specialties": [
+        "Unit Testing",
+        "Integration Testing",
+        "Playwright",
+        "Pytest"
+      ],
+      "skills": [
+        "FileSkill",
+        "CodeAnalysisSkill",
+        "ShellSkill"
+      ],
+      "status": "online",
+      "last_heartbeat": 1771594351.053808,
+      "joined_at": "2026-02-20T08:32:31.053807",
+      "task_count": 0,
+      "latency_ms": 3288805.9
+    },
+    {
+      "node_id": "2b25fe30ce63",
+      "name": "Orchestra",
+      "role": "Swarm Manager",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "specialties": [
+        "Coordination",
+        "Resource Management",
+        "Scheduling",
+        "Delegation"
+      ],
+      "skills": [
+        "FileSkill"
+      ],
+      "status": "online",
+      "last_heartbeat": 1771594351.053808,
+      "joined_at": "2026-02-20T08:32:31.053807",
+      "task_count": 0,
+      "latency_ms": 3288805.9
+    },
+    {
+      "node_id": "635c68d43648",
+      "name": "Scribe",
+      "role": "Technical Writer",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "specialties": [
+        "Markdown",
+        "API Docs",
+        "READMEs",
+        "Tutorials"
+      ],
+      "skills": [
+        "FileSkill",
+        "DocSkill"
+      ],
+      "status": "online",
+      "last_heartbeat": 1771594351.054808,
+      "joined_at": "2026-02-20T08:32:31.054807",
+      "task_count": 0,
+      "latency_ms": 3288804.9
+    },
+    {
+      "node_id": "9defe1cf2b42",
+      "name": "Bridge",
+      "role": "Integration Specialist",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "specialties": [
+        "MCP",
+        "REST APIs",
+        "WebSockets",
+        "Webhooks"
+      ],
+      "skills": [
+        "FileSkill",
+        "WebSearchSkill",
+        "DocIngestionSkill",
+        "MCPToolSkill"
+      ],
+      "status": "online",
+      "last_heartbeat": 1771594351.054808,
+      "joined_at": "2026-02-20T08:32:31.054807",
+      "task_count": 0,
+      "latency_ms": 3288804.9
+    },
+    {
+      "node_id": "4d3248eaeddc",
+      "name": "Pulse",
+      "role": "Data Analyst",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "specialties": [
+        "Pandas",
+        "NumPy",
+        "Visualization",
+        "ML Pipelines"
+      ],
+      "skills": [
+        "FileSkill",
+        "DataSkill"
+      ],
+      "status": "online",
+      "last_heartbeat": 1771594351.0558069,
+      "joined_at": "2026-02-20T08:32:31.055807",
+      "task_count": 0,
+      "latency_ms": 3288803.9
+    }
+  ],
+  "connections": [
+    {
+      "from": "64c41ea12216",
+      "to": "e1219ab3c690",
+      "shared_specialties": [],
+      "strength": 2
+    },
+    {
+      "from": "64c41ea12216",
+      "to": "08da6c311bdf",
+      "shared_specialties": [],
+      "strength": 1
+    },
+    {
+      "from": "64c41ea12216",
+      "to": "8f373e052c29",
+      "shared_specialties": [],
+      "strength": 1
+    },
+    {
+      "from": "64c41ea12216",
+      "to": "c9af0d296bae",
+      "shared_specialties": [],
+      "strength": 1
+    },
+    {
+      "from": "64c41ea12216",
+      "to": "afbb4bfd6ce0",
+      "shared_specialties": [],
+      "strength": 2
+    },
+    {
+      "from": "64c41ea12216",
+      "to": "c0c2a990b48d",
+      "shared_specialties": [],
+      "strength": 1
+    },
+    {
+      "from": "64c41ea12216",
+      "to": "8b1ee42c7c4c",
+      "shared_specialties": [],
+      "strength": 2
+    },
+    {
+      "from": "64c41ea12216",
+      "to": "2b25fe30ce63",
+      "shared_specialties": [],
+      "strength": 1
+    },
+    {
+      "from": "64c41ea12216",
+      "to": "635c68d43648",
+      "shared_specialties": [],
+      "strength": 1
+    },
+    {
+      "from": "64c41ea12216",
+      "to": "9defe1cf2b42",
+      "shared_specialties": [],
+      "strength": 1
+    },
+    {
+      "from": "64c41ea12216",
+      "to": "4d3248eaeddc",
+      "shared_specialties": [],
+      "strength": 1
+    },
+    {
+      "from": "e1219ab3c690",
+      "to": "afbb4bfd6ce0",
+      "shared_specialties": [],
+      "strength": 1
+    },
+    {
+      "from": "e1219ab3c690",
+      "to": "8b1ee42c7c4c",
+      "shared_specialties": [],
+      "strength": 1
+    },
+    {
+      "from": "afbb4bfd6ce0",
+      "to": "8b1ee42c7c4c",
+      "shared_specialties": [],
+      "strength": 1
+    }
+  ]
+}

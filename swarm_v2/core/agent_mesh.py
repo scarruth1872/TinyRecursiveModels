@@ -17,6 +17,7 @@ import time
 import hashlib
 from typing import Dict, List, Optional
 from datetime import datetime
+from swarm_v2.skills.embedding_skill import FastEmbeddingSkill
 
 
 
@@ -245,6 +246,26 @@ class AgentMesh:
             return alive[0] if alive else None
 
         candidates.sort(key=lambda x: x[0], reverse=True)
+        
+        # If the top score is low, try semantic matching as a tie-breaker or fallback
+        if candidates[0][0] < 10:
+            try:
+                embedder = FastEmbeddingSkill()
+                task_emb = embedder.embed_text(task_lower)
+                if task_emb:
+                    semantic_candidates = []
+                    for _, node in candidates:
+                        # Combine specialties and skills into a node description
+                        node_desc = f"{node.role} {node.name} {' '.join(node.specialties)} {' '.join(node.skills)}"
+                        node_emb = embedder.embed_text(node_desc.lower())
+                        score = embedder.cosine_similarity(task_emb, node_emb)
+                        semantic_candidates.append((score, node))
+                    
+                    semantic_candidates.sort(key=lambda x: x[0], reverse=True)
+                    return semantic_candidates[0][1]
+            except Exception as e:
+                print(f"[Mesh] Semantic routing failed: {e}")
+
         return candidates[0][1]
 
     async def route_task(self, task: str, target_node_id: str = None,

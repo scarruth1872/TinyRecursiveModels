@@ -1,4 +1,4 @@
-# Swarm OS v6 — API Reference
+# Swarm OS v11 — API Reference
 
 **Base URL:** `http://127.0.0.1:8001`  
 **Interactive Docs:** `http://127.0.0.1:8001/docs`  
@@ -16,7 +16,7 @@ Complete system status — agents, distributed mesh, memory.
 
 ```json
 {
-  "status": "v6_online", "phase": 6, "agents": 12,
+  "status": "v11_online", "phase": 11, "agents": 12,
   "mesh": { "distributed": true, "parallel_availability": "100%" }
 }
 ```
@@ -48,7 +48,16 @@ List all 12 agents with skills, mesh node IDs, and **Cognitive Stack status**.
 ```json
 {
   "role": "Architect",
-  "stack": { "executive": "gemma3:270m", "reasoning": "TRM-7M", "offloads": 12 }
+  "stack": { 
+    "executive": "gemma3:270m", 
+    "reasoning": "TRM-7M", 
+    "offloads": 12 
+  },
+  "config": {
+    "H_cycles": 2,
+    "L_cycles": 1,
+    "complexity_threshold": 0.6
+  }
 }
 ```
 
@@ -276,7 +285,7 @@ Full mesh topology — all 12 nodes with status, specialties, task counts.
 
 ```json
 {
-  "version": 60, "total_nodes": 12, "alive": 12, "stale": 0,
+  "version": 110, "total_nodes": 12, "alive": 12, "stale": 0,
   "nodes": [{ "node_id": "64c41ea12216", "name": "Archi", "status": "online" }],
   "connections": []
 }
@@ -285,7 +294,7 @@ Full mesh topology — all 12 nodes with status, specialties, task counts.
 ### `GET /mesh/stats`
 
 ```json
-{ "total_nodes": 12, "alive_nodes": 12, "topology_version": 60, "total_tasks_routed": 8 }
+{ "total_nodes": 12, "alive_nodes": 12, "topology_version": 110, "total_tasks_routed": 8 }
 ```
 
 ### `GET /mesh/peers`
@@ -408,4 +417,4 @@ curl -X POST http://localhost:8001/memory/sync/Lead%20Developer
 
 ### System Status Disclaimer
 
-*Swarm OS v6 — 35 endpoints across 7 domains — February 2026*
+Swarm OS v11 — 35 endpoints across 7 domains — February 2026

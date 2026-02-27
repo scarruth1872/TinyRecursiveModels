@@ -10,10 +10,11 @@ from swarm_v2.skills.mcp_tool_skill import MCPToolSkill
 from swarm_v2.skills.embedding_skill import EmbeddingSkill, FastEmbeddingSkill, HighQualityEmbeddingSkill, SpectralEmbeddingSkill
 from swarm_v2.skills.trm_skill import TRMSkill
 from swarm_v2.skills.relationship_skill import RelationshipReasoningSkill
+from swarm_v2.skills.rlm_skill import RLMSkill
 
 # Cognitive Stack Configuration (Phase 6)
-# Each agent uses Gemma 3 270M (Executive) + Samsung TRM 7M (Reasoning).
-# Total VRAM footprint: ~150-200MB per agent (~2.4GB total).
+# Each agent uses Phi-4 3.8B (Executive) + Samsung TRM 7M (Reasoning).
+# Total VRAM footprint: ~2.5GB per agent cluster. Optimized for parallel reasoning.
 
 EXPERTS_CONFIG = [
     {
@@ -22,7 +23,7 @@ EXPERTS_CONFIG = [
         "background": "Expert in system design, high-level planning, and scalable architecture patterns.",
         "specialties": ["System Design", "Scalability", "Infrastructure", "Microservices"],
         "avatar_color": "#00aaff",
-        "skills": [FileSkill, DocSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill],
+        "skills": [FileSkill, DocSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill, RLMSkill],
     },
     {
         "name": "Devo",
@@ -46,7 +47,7 @@ EXPERTS_CONFIG = [
         "background": "Focused on complex logical deductions, mathematical proofs, and algorithm design. Uses TRM Reasoning for deep recursive loops (3-5 cycles) on every architecture task.",
         "specialties": ["Logic", "Math", "Algorithms", "Optimization", "Recursive Reasoning"],
         "avatar_color": "#ffff00",
-        "skills": [FileSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill, TRMSkill],
+        "skills": [FileSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill, TRMSkill, RLMSkill],
     },
     {
         "name": "Shield",

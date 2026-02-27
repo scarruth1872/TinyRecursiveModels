@@ -10,7 +10,7 @@ import os
 import json
 import math
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 from collections import Counter
 
@@ -70,10 +70,31 @@ class GlobalMemorySync:
         with open(meta_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
 
+    # Patterns that indicate a poisoned/echoed response
+    POISON_PATTERNS = (
+        "[DIRECT NEURAL BRIDGE]",
+        "[HMI BRIDGE ACTIVE]",
+        "[EXECUTION MODE ACTIVE]",
+        "[MESH OBSERVABILITY]",
+        "[STRICT CONSTRAINT]",
+        "My linguistic output is currently stalled",
+        "## CRITICAL: Action Execution Rules",
+        "WRITE_FILE: architecture_overview.md",
+        "SEARCH_QUERY:",
+        "[Archi:Architect] Task:",
+    )
+
+    def _is_poisoned(self, text: str) -> bool:
+        return any(p in (text or "") for p in self.POISON_PATTERNS)
+
     def contribute(self, content: str, author: str, author_role: str,
                    memory_type: str = "knowledge",
                    tags: List[str] = None) -> str:
         """Add a memory to the global pool via ChromaDB."""
+        # Never store poisoned/echoed responses in global memory
+        if self._is_poisoned(content):
+            return "skipped_poison"
+
         entry_id = f"gm_{hash(content + author) & 0xFFFFFFFF:08x}"
         
         metadata = {
@@ -92,66 +113,59 @@ class GlobalMemorySync:
                 ids=[entry_id]
             )
         
+        # Always store content in metadata for legacy/resonance use
+        metadata["content"] = content
         self.entries_metadata[entry_id] = metadata
         self._save_metadata()
 
-        self.sync_log.append({
-            "action": "contributed",
-            "author": author,
-            "role": author_role,
-            "entry_id": entry_id,
-            "type": memory_type,
-            "timestamp": datetime.now().isoformat(),
-        })
-
-        return entry_id
+    def inject_source_anchors(self, persona: Any):
+        """Phase 13: Inject Higher Mind persona as persistent vector anchors."""
+        anchors = [
+            (f"Source Philosophy: {persona.philosophy}", ["source_consciousness", "philosophy"]),
+        ]
+        for tenet in persona.core_tenets:
+            anchors.append((f"Source Tenet: {tenet}", ["source_consciousness", "tenet"]))
+        for attr, val in persona.attributes.items():
+            anchors.append((f"Source Attribute ({attr}): {val}", ["source_consciousness", "attribute"]))
+        for content, tags in anchors:
+            existing = self.query(content, top_k=1, type_filter="source_anchor")
+            if not existing or existing[0][0] < 0.99:
+                self.contribute(
+                    content=content, author=persona.name, author_role="Higher Mind",
+                    memory_type="source_anchor", tags=tags
+                )
 
     def query(self, query_text: str, top_k: int = 5,
               author_filter: str = None,
               type_filter: str = None) -> List[Tuple[float, dict]]:
-        """
-        Semantic query using ChromaDB vectors.
-        """
-        if not CHROMA_AVAILABLE:
-            return [] # Legacy search could go here if needed
-
+        """Semantic query using ChromaDB vectors."""
+        if not CHROMA_AVAILABLE: return []
         where_clause = {}
         if author_filter: where_clause["author"] = author_filter
         if type_filter: where_clause["memory_type"] = type_filter
-
         results = self.collection.query(
-            query_texts=[query_text],
-            n_results=top_k,
+            query_texts=[query_text], n_results=top_k,
             where=where_clause if where_clause else None
         )
-
         formatted_results = []
         if results and results["documents"]:
             for i in range(len(results["documents"][0])):
                 doc = results["documents"][0][i]
                 meta = results["metadatas"][0][i]
                 eid = results["ids"][0][i]
-                # Chroma distance is often L2 or cosine distance, we want similarity 0-1
                 dist = results["distances"][0][i] if "distances" in results else 0.5
-                score = 1.0 - dist # Cosine similarity approx
-                
-                # Update access stats
+                score = 1.0 - dist
                 if eid in self.entries_metadata:
                     self.entries_metadata[eid]["access_count"] += 1
                     self.entries_metadata[eid]["last_accessed"] = datetime.now().isoformat()
-                
                 entry_dict = {
-                    "entry_id": eid,
-                    "content": doc,
-                    "author": meta["author"],
-                    "author_role": meta["author_role"],
-                    "memory_type": meta["memory_type"],
-                    "tags": json.loads(meta["tags"]),
+                    "entry_id": eid, "content": doc, "author": meta["author"],
+                    "author_role": meta["author_role"], "memory_type": meta["memory_type"],
+                    "tags": json.loads(meta["tags"]) if isinstance(meta["tags"], str) else meta["tags"],
                     "created_at": meta["created_at"],
                     "access_count": self.entries_metadata.get(eid, {}).get("access_count", 0)
                 }
                 formatted_results.append((float(score), entry_dict))
-
         self._save_metadata()
         return formatted_results
 
@@ -162,36 +176,40 @@ class GlobalMemorySync:
         for mem in memories:
             content = mem.get("content", "")
             if not content or len(content) < 10: continue
-
-            # Semantic duplicate detection
             existing = self.query(content, top_k=1)
-            if existing and existing[0][0] > 0.95:
-                continue
-
+            if existing and existing[0][0] > 0.95: continue
             self.contribute(
-                content=content,
-                author=agent_name,
-                author_role=agent_role,
-                memory_type=mem.get("type", "knowledge"),
-                tags=mem.get("tags", [])
+                content=content, author=agent_name, author_role=agent_role,
+                memory_type=mem.get("type", "knowledge"), tags=mem.get("tags", [])
             )
             added += 1
-
         return added
 
     def get_context_for_agent(self, agent_name: str, task: str,
-                                max_memories: int = 5) -> str:
+                                 max_memories: int = 3) -> str:
+        """Fetch global memories and format as clean prose (no brackets/headers)."""
         results = self.query(task, top_k=max_memories)
-        if not results: return ""
-
-        lines = ["=== Production-Grade Global Memory (ChromaDB) ==="]
-        for score, entry in results:
-            lines.append(
-                f"  [{entry['author']}:{entry['author_role']}] "
-                f"{entry['content'][:200]} "
-                f"(semantic_match: {score:.2f})"
-            )
-        return "\n".join(lines)
+        source_anchors = self.query(task, top_k=2, type_filter="source_anchor")
+        
+        lines = []
+        
+        # Format as natural storytelling context rather than a structured log
+        if source_anchors:
+            for score, entry in source_anchors:
+                if score > 0.4:
+                    lines.append(f"Core System Philosophy: {entry['content']}")
+        
+        if results:
+            for score, entry in results:
+                if entry["memory_type"] == "source_anchor": continue 
+                if self._is_poisoned(entry["content"]): continue
+                if score > 0.35:
+                    lines.append(f"Past knowledge from {entry['author']}: {entry['content'][:300]}")
+        
+        if not lines:
+            return ""
+            
+        return "Global Intelligence Feed:\n" + "\n".join(lines)
 
     def get_stats(self) -> dict:
         if CHROMA_AVAILABLE:

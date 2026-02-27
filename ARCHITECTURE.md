@@ -1,6 +1,6 @@
-# Swarm OS v6 — Architecture Reference
+# Swarm OS v11 — Architecture Reference
 
-**Version:** 6.0 (Phase 6: Distributed Intelligence)  
+**Version:** 11.0 (Phase 11: Recursive Self-Optimization)  
 **Date:** February 23, 2026
 
 ---
@@ -11,59 +11,52 @@
 swarm_v2/
 ├── app_v2.py                    # Swarm OS Gateway — Soul Endpoint & API
 ├── core/
-│   ├── cognitive_stack.py       # [v6] Hybrid Intelligence (Gemma + TRM)
-│   ├── base_agent.py            # BaseAgent: Stack integration & persona
-│   ├── telemetry.py             # [v6] Distributed Pulse Monitoring
-│   ├── proactive_loop.py        # Proactive Orchestration Loop
-│   ├── manus_engine.py          # Parallel Task Superposition
-│   └── global_memory.py         # Distributed Vector Store (ChromaDB)
+│   ├── artifact_pipeline.py     # [v11] Optimized Artifact Lifecycle (Async Batching)
+│   ├── cognitive_stack.py       # Distributed Cognitive Stack (Executive + TRM)
+│   ├── agent_mesh.py            # P2P Mesh Federation & Node Registry
+│   ├── monitor_daemon.py        # Self-Healing & Infrastructure Monitoring
+│   └── heartbeat_scheduler.py   # Proactive Autonomy & Mesh Heartbeats
 ├── experts/
-│   └── registry.py              # Distributed Agent Registry (12 Core Agents)
-└── skills/
-    └── relationship_skill.py    # Philosophical Alignment & Soul Report
+│   └── registry.py              # 12 Core Agents Persona Definitions
+└── mcp/
+    └── synthesizer.py           # On-demand Tool Synthesis
+launcher.py                     # Unified Service Orchestrator
+start_tools.py                  # MCP Specialized Microservices Manager
+recover_registry.py             # Fault-tolerant Registry Synchronization
 ```
 
 ---
 
 ## Distributed Cognitive Stack
 
-The core innovation of v6 is the elimination of centralized model bottlenecks.
+The core innovation of v11 is **Parallel Symbolic Processing**.
 
 ### 1. The Stack Architecture
 
-Each agent owns a local `CognitiveStack` instance:
+Each agent utilizes a local `CognitiveStack`:
 
-- **Executive Layer (Gemma 3 270M)**: Handles natural language, instructions, and tool orchestration.
-- **Reasoning Core (Samsung TRM 7M)**: Processes logically dense tasks using recursive symbolic refinement.
+- **Executive Layer (Gemma 3 270M)**: Contextual language processing and tool orchestration.
+- **Reasoning Core (Samsung TRM 7M)**: Symbolic logic refinement and mathematical verification.
 
-### 2. Complexity-Aware Offloading
+### 2. Startup Optimization (Fast Boot V2)
 
-`BaseAgent` automatically classifies incoming tasks:
+To prevent port-binding deadlocks during massive artifact indexing, v11 implements **Deferred Background Activation**:
 
-- **Low Complexity**: Executed directly by the Executive Layer.
-- **High Complexity**: Routed to the TRM Reasoning Core for deep logical audit.
-
----
-
-## Resource Management: From Arbiter to Autonomy
-
-In v6, the `ResourceArbiter` has been simplified. Because the total VRAM footprint of all 12 agents is only **~2.4GB**, the previous logic for model-swapping and slot acquisition has been retired.
-
-- **Parallel Availability**: 100% of agents are resident and ready at all times.
-- **VRAM Stability**: The system maintains a constant, low-pressure profile on the AMD 6700 XT.
+- **Socket Isolation**: The FastAPI server binds to port `8001` immediately.
+- **Async Yielding**: Intensive background loops (Monitor, Scanner, Proactive Loops) are deferred via a 2-second safety delay (`delayed_loops` task), ensuring the dashboard can connect instantly.
 
 ---
 
-## The Soul & Telemetry
+## Artifact Pipeline & Security
 
-### 1. Soul Report (`/swarm/soul`)
+### 1. High-Performance Indexing
 
-Powered by the `RelationshipReasoningSkill`, this aggregates the swarm's philosophical state, harmony index, and autonomous evolution proposals.
+The `ArtifactPipeline` now implements dependency-aware scanning. It automatically ignores massive directories like `node_modules` and `venv`, allowing the system to handle enterprise-scale codebases without stalling the event loop.
 
-### 2. Distributed Telemetry (`/swarm/telemetry`)
+### 2. Sentinel Security Layer
 
-Provides a live feed of per-agent stack health, reasoning call frequency, and global mesh coherence.
+Every artifact is automatically audited by the **Security Auditor** (Shield) before synthesis. Unsafe code is quarantined, while approved plans are integrated into the `swarm_v2_integrated` workspace.
 
 ---
 
-*Swarm OS v6 Architecture — Phase 6: Distributed Intelligence — February 2026*
+*Swarm OS v11 Architecture — Phase 11: Recursive Self-Optimization — February 2026*

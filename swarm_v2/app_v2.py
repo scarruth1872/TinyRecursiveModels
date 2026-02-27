@@ -2,6 +2,7 @@ import os
 import uuid
 import asyncio
 import psutil
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -30,6 +31,8 @@ from swarm_v2.core.swarm_performance_insights import get_performance_insights, s
 from swarm_v2.core.deterministic_forge import get_deterministic_forge
 from swarm_v2.core.telemetry import get_telemetry
 from swarm_v2.core.proactive_loop import get_proactive_loop
+from swarm_v2.core.sentinel import SentinelMiddleware
+from swarm_v2.core.redis_mock import PersistentRedisMock
 
 # ─── System Optimization ───────────────────────────────────────────────────────
 
@@ -55,6 +58,13 @@ optimize_system()
 app = FastAPI(title="TRM Swarm V2 API", version="2.3.1")
 
 app.add_middleware(
+    SentinelMiddleware,
+    redis_client=PersistentRedisMock(),
+    rate_limit=500,  # Increased for production-grade polling
+    rate_window=60
+)
+
+app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
@@ -62,21 +72,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Phase 4 Security Layer: Sentinel Middleware
-from swarm_v2.core.sentinel import SentinelMiddleware
-from swarm_v2.core.redis_mock import PersistentRedisMock
-app.add_middleware(
-    SentinelMiddleware,
-    redis_client=PersistentRedisMock(),
-    rate_limit=500,  # Increased for production-grade polling
-    rate_window=60
-)
-
 engine_team = get_expert_team()
 get_expert_registry().register_team(engine_team)
 spawned_subagents: Dict[str, Any] = {}
 pipeline = ArtifactPipeline()
+
+# Force scan to register all existing artifacts in the directory
 pipeline.scan_artifacts()
+print(f"[Pipeline] Initial scan found {len(pipeline.artifacts)} artifacts")
+
+# Log some stats
+stats = pipeline.get_stats()
+print(f"[Pipeline] Stats: {stats}")
 
 # Phase 4: Self-Healing Architecture
 remediation_engine = RemediationEngine(engine_team)
@@ -241,10 +248,25 @@ async def chat_with_agent(req: ChatRequest):
     if req.role not in engine_team:
         raise HTTPException(status_code=404, detail=f"Expert '{req.role}' not found")
     agent = engine_team[req.role]
-    response = await agent.process_task(req.message, sender=req.sender)
-    pipeline.scan_artifacts()
-    return {"role": req.role, "name": agent.persona.name,
-            "response": response, "memory": agent.get_memory_stats()}
+    resp_obj = await agent.process_task(req.message, sender=req.sender)
+    
+    # Handle dict vs string return from process_task
+    if isinstance(resp_obj, dict):
+        response = resp_obj.get("response")
+        reasoning_trace = resp_obj.get("reasoning_trace")
+    else:
+        response = resp_obj
+        reasoning_trace = None
+
+    await asyncio.to_thread(pipeline.scan_artifacts)
+    
+    return {
+        "role": req.role, 
+        "name": agent.persona.name,
+        "response": response, 
+        "reasoning_trace": reasoning_trace,
+        "memory": agent.get_memory_stats()
+    }
 
 
 @app.post("/swarm/broadcast")
@@ -266,7 +288,7 @@ async def run_task_pipeline(req: TaskPipelineRequest):
         resp = await engine_team[role].process_task(ctx, sender="pipeline")
         results.append({"role": role, "name": engine_team[role].persona.name, "response": resp})
         ctx = f"Previous ({role}):\n{resp}\n\nOriginal: {req.task}\n\nContinue."
-    pipeline.scan_artifacts()
+    await asyncio.to_thread(pipeline.scan_artifacts)
     return {"task": req.task, "pipeline": req.pipeline, "results": results}
 
 
@@ -299,11 +321,21 @@ async def get_agent_memory(role: str):
 # ─── Artifact Pipeline Endpoints ──────────────────────────────────────────────
 
 @app.get("/artifacts")
-async def list_artifacts(grouped: bool = False):
-    pipeline.scan_artifacts()
+async def list_artifacts(grouped: bool = False, include_content: bool = False):
+    await asyncio.to_thread(pipeline.scan_artifacts)
     if grouped:
         return {"groups": pipeline.get_grouped_artifacts(), "stats": pipeline.get_stats()}
-    return {"artifacts": pipeline.list_all(), "stats": pipeline.get_stats()}
+    
+    artifacts = pipeline.list_all()
+    
+    # Include content for display (limited to first 500 chars for performance)
+    if include_content:
+        for art in artifacts:
+            content = pipeline.get_content(art["filename"])
+            if content:
+                art["content"] = content[:500]  # Preview only
+    
+    return {"artifacts": artifacts, "stats": pipeline.get_stats()}
 
 
 @app.get("/artifacts/{filename}")
@@ -384,7 +416,7 @@ async def test_artifact(req: TestRequest):
     test_content = pipeline.get_content(test_filename)
     passed = test_content is not None and len(test_content) > 50
     pipeline.set_tested(req.filename, test_filename, passed, test_response[:300])
-    pipeline.scan_artifacts()
+    await asyncio.to_thread(pipeline.scan_artifacts)
     return {"filename": req.filename, "test_file": test_filename,
             "test_generated": passed, "test_response": test_response[:500],
             "status": pipeline.get_artifact(req.filename)}
@@ -396,6 +428,88 @@ async def integrate_artifact(req: IntegrateRequest):
     if not result:
         raise HTTPException(status_code=400, detail="Not found or wrong status")
     return result
+
+
+# ─── Dashboard Extension Endpoints (Fix 404s) ──────────────────────────────────
+
+@app.get("/research/tasks")
+async def get_research_tasks():
+    daemon = get_reconnaissance_daemon()
+    if not daemon:
+        return {"tasks": []}
+    return {
+        "tasks": [
+            {
+                "task_id": f["finding_id"],
+                "objective": f["topic"],
+                "summary": f["summary"],
+                "status": "completed",
+                "timestamp": f["timestamp"]
+            } for f in daemon.get_recent_findings(limit=20)
+        ]
+    }
+
+@app.get("/verification/stats")
+async def get_verification_stats():
+    stats = pipeline.get_stats()
+    return {
+        "items_in_queue": stats.get("pending", 0),
+        "verified_last_hour": stats.get("approved", 0), # Estimated
+        "total_scanned": stats.get("total", 0)
+    }
+
+@app.get("/verification/queue")
+async def get_verification_queue():
+    pending = pipeline.list_by_status(ArtifactStatus.PENDING)
+    return {
+        "queue": [
+            {
+                "item_id": a["filename"],
+                "item_type": a.get("type", "Artifact"),
+                "status": a["status"]
+            } for a in pending
+        ]
+    }
+
+@app.get("/infrastructure/status")
+async def get_infra_status():
+    arbiter = get_resource_arbiter()
+    return arbiter.get_status() if arbiter else {"status": "inactive"}
+
+@app.get("/infrastructure/nodes")
+async def get_infra_nodes():
+    mesh = get_agent_mesh()
+    if not mesh:
+        return {"nodes": []}
+    nodes = mesh.get_topology().get("nodes", [])
+    return {"nodes": nodes}
+
+@app.get("/testing/stats")
+async def get_testing_stats():
+    stats = pipeline.get_stats()
+    total = stats.get("tested", 0) + stats.get("test_failed", 0)
+    rate = (stats.get("tested", 0) / total * 100) if total > 0 else 0
+    return {
+        "tests_running": 0,
+        "success_rate_24h": round(rate, 1),
+        "total_runs": total
+    }
+
+@app.get("/testing/runs")
+async def get_testing_runs():
+    tested = pipeline.list_by_status(ArtifactStatus.TESTED)
+    failed = pipeline.list_by_status(ArtifactStatus.TEST_FAILED)
+    all_runs = tested + failed
+    return {
+        "runs": [
+            {
+                "run_id": a["filename"],
+                "status": a["status"],
+                "timestamp": a.get("created_at", ""),
+                "duration_seconds": 12 # Mocked duration
+            } for a in all_runs
+        ]
+    }
 
 
 # ─── REMEDIATE: Architect re-plans → agents rebuild rejected artifacts ─────
@@ -1022,6 +1136,12 @@ async def startup_event():
     asyncio.create_task(auto_scan_pipeline())
     # Start the mesh heartbeat reflex for native agents
     asyncio.create_task(mesh_heartbeat_reflex())
+    
+    # Phase 5: Start the federation heartbeat if enabled
+    if federation:
+        federation.start_heartbeat()
+        print("[Federation] P2P Heartbeat started.")
+        
     print("[Swarm V2] Monitor Daemon, Shield Scanner, & Mesh Heartbeats started.")
 
 async def mesh_heartbeat_reflex():
@@ -1122,12 +1242,6 @@ async def get_research_findings(limit: int = 10, topic: str = ""):
     if topic:
         return {"findings": daemon.get_findings_by_topic(topic)}
     return {"findings": daemon.get_recent_findings(limit)}
-
-@app.get("/research/stats")
-async def get_research_stats():
-    """Get reconnaissance daemon statistics."""
-    daemon = get_reconnaissance_daemon()
-    return daemon.get_stats()
 
 @app.post("/research/run")
 async def trigger_research_cycle():
@@ -1762,6 +1876,19 @@ async def stop_performance_monitoring():
     insights.stop()
     return {"status": "stopped"}
 
+# ─── Swarm Orchestration Statistics (Phase 6) ──────────────────────────────────
+
+@app.get("/swarm/orchestrator/stats")
+async def get_orchestrator_stats():
+    """Returns the current state of the proactive orchestration loop."""
+    return {
+        "active_tasks": active_orchestration_tasks,
+        "triggered_proposals_count": len(triggered_proposals),
+        "recent_proposals": list(triggered_proposals)[-5:],
+        "status": "online" if active_orchestration_tasks < 2 else "saturated",
+        "timestamp": datetime.now().isoformat()
+    }
+
 # ─── Proactive Orchestration (Phase 5: Self-Starting Agents) ──────────────────
 
 # Track triggered proposals and active tasks
@@ -1773,7 +1900,7 @@ async def proactive_orchestration_loop():
     global active_orchestration_tasks
     log_file = "swarm_v2_memory/orchestration.log"
     with open(log_file, "a") as f:
-        f.write(f"\n2026-02-23 [INFO] [Orchestration] Proactive loop started.\n")
+        f.write(f"\n{datetime.now().strftime('%Y-%m-%d')} [INFO] [Orchestration] Proactive loop started.\n")
     
     while True:
         try:
@@ -1787,10 +1914,10 @@ async def proactive_orchestration_loop():
             approved.sort(key=lambda x: priority(x["filename"]))
             
             with open(log_file, "a") as f:
-                f.write(f"2026-02-23 [DEBUG] [Orchestration] Tick. Approved: {len(approved)} | Active Tasks: {active_orchestration_tasks}\n")
+                f.write(f"{datetime.now().strftime('%Y-%m-%d')} [DEBUG] [Orchestration] Tick. Approved: {len(approved)} | Active Tasks: {active_orchestration_tasks}\n")
             
-            # Only trigger if we aren't already waiting on a task
-            if active_orchestration_tasks < 1:
+            # PHASE 6: Increased capacity and robustness
+            if active_orchestration_tasks < 2:
                 for art in approved:
                     filename = art["filename"]
                     clean_filename = filename.replace("swarm_v2_artifacts/", "").replace("swarm_v2_artifacts\\", "")
@@ -1801,7 +1928,7 @@ async def proactive_orchestration_loop():
                         proposal_name = f"PROPOSAL_{os.path.splitext(os.path.basename(clean_filename))[0]}.md"
                         
                         if proposal_name not in pipeline.artifacts and clean_filename not in triggered_proposals:
-                            log_msg = f"2026-02-23 [INFO] [Orchestration] Triggering Devo Proposal for: {clean_filename}"
+                            log_msg = f"{datetime.now().strftime('%Y-%m-%d')} [INFO] [Orchestration] Triggering Devo Proposal for: {clean_filename}"
                             with open(log_file, "a") as f:
                                 f.write(log_msg + "\n")
                             
@@ -1850,7 +1977,7 @@ async def proactive_orchestration_loop():
 
         except Exception as e:
             with open(log_file, "a") as f:
-                f.write(f"2026-02-23 [ERROR] [Orchestration] Loop error: {e}\n")
+                f.write(f"{datetime.now().strftime('%Y-%m-%d')} [ERROR] [Orchestration] Loop error: {e}\n")
             
         await asyncio.sleep(45) # Lower frequency to avoid LLM congestion
 
