@@ -1981,6 +1981,137 @@ async def proactive_orchestration_loop():
             
         await asyncio.sleep(45) # Lower frequency to avoid LLM congestion
 
+# ─── QIAE Module Endpoints ─────────────────────────────────────────────────────
+# Imports for new Round 2 modules
+from swarm_v2.core.kanban_board import get_kanban_board
+from swarm_v2.core.ddr_antibody import DigitalDNARepository
+from swarm_v2.core.secrets_vault import SecretsVault
+from swarm_v2.core.agent_mailbox import AgentMailbox
+from swarm_v2.core.ultrawork_loop import UltraworkLoop
+from swarm_v2.core.skill_loader import SkillLoader
+
+# Request models for new endpoints
+class CreateCardRequest(BaseModel):
+    title: str
+    description: str = ""
+    assignee: str = ""
+    priority: str = "medium"
+    tags: List[str] = []
+
+class MoveCardRequest(BaseModel):
+    target_status: str
+
+class SendMailboxMessage(BaseModel):
+    from_agent: str
+    to_agent: str
+    body: str
+    subject: str = ""
+
+class DDRScanRequest(BaseModel):
+    code: str
+    filename: str = "untitled.py"
+
+
+# ─── Kanban Board (Tab 14) ─────────────────────────────────────────────────────
+
+@app.get("/kanban/board")
+async def get_board():
+    """Full Kanban board grouped by columns."""
+    kb = get_kanban_board()
+    return kb.get_board()
+
+@app.get("/kanban/stats")
+async def get_kanban_stats():
+    """Kanban board statistics."""
+    kb = get_kanban_board()
+    return kb.get_stats()
+
+@app.post("/kanban/cards")
+async def create_kanban_card(req: CreateCardRequest):
+    """Create a new task card."""
+    kb = get_kanban_board()
+    card_id = kb.create_card(
+        title=req.title,
+        description=req.description,
+        assignee=req.assignee,
+        priority=req.priority,
+        tags=req.tags,
+    )
+    return {"card_id": card_id, "status": "created"}
+
+@app.post("/kanban/cards/{card_id}/move")
+async def move_kanban_card(card_id: str, req: MoveCardRequest):
+    """Move a card to a new status column."""
+    kb = get_kanban_board()
+    result = kb.move_card(card_id, req.target_status)
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["message"])
+    return result
+
+
+# ─── DDR Antibody & Secrets Vault (Tab 15) ─────────────────────────────────────
+
+@app.get("/ddr/antibodies")
+async def list_antibodies():
+    """List all DDR antibodies."""
+    ddr = DigitalDNARepository()
+    return {"antibodies": ddr.get_antibodies()}
+
+@app.get("/ddr/stats")
+async def get_ddr_stats():
+    """DDR prevention statistics."""
+    ddr = DigitalDNARepository()
+    return ddr.get_prevention_stats()
+
+@app.post("/ddr/scan")
+async def scan_code_ddr(req: DDRScanRequest):
+    """Scan code against DDR antibodies."""
+    ddr = DigitalDNARepository()
+    matches = ddr.check_antibodies(req.code, req.filename)
+    return {"matches": matches, "scanned_lines": len(req.code.splitlines())}
+
+@app.get("/secrets/keys")
+async def list_secret_keys():
+    """List secret key names (no values exposed)."""
+    vault = SecretsVault()
+    return {"keys": vault.list_keys(), "stats": vault.get_stats()}
+
+
+# ─── Agent Comms & Missions (Tab 16) ───────────────────────────────────────────
+
+@app.get("/mailbox/agents")
+async def list_mailbox_agents():
+    """List all agents with mailboxes."""
+    return {"agents": AgentMailbox.list_agents()}
+
+@app.get("/mailbox/{agent_id}/inbox")
+async def peek_mailbox(agent_id: str):
+    """Peek at an agent's inbox without consuming messages."""
+    mb = AgentMailbox(agent_id)
+    return {"agent": agent_id, "pending": mb.count_pending(), "messages": mb.peek()}
+
+@app.post("/mailbox/send")
+async def send_mailbox_message(req: SendMailboxMessage):
+    """Send a message between agents."""
+    mb = AgentMailbox(req.from_agent)
+    mb.send(req.to_agent, req.body, subject=req.subject)
+    return {"status": "sent", "from": req.from_agent, "to": req.to_agent}
+
+@app.get("/ultrawork/missions")
+async def list_ultrawork_missions():
+    """List all Ultrawork Loop missions."""
+    uw = UltraworkLoop()
+    missions = uw.list_missions()
+    return {"missions": missions, "stats": uw.get_stats()}
+
+@app.get("/skills/portable")
+async def list_portable_skills():
+    """List all SKILL.md and Python skills."""
+    loader = SkillLoader()
+    loader.discover_skills()
+    return {"skills": loader.list_skills(), "stats": loader.get_stats()}
+
+
 if __name__ == "__main__":
     import uvicorn
     # Start the proactive loop in the background

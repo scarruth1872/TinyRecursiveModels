@@ -77,6 +77,7 @@ class GlobalMemorySync:
         "[EXECUTION MODE ACTIVE]",
         "[MESH OBSERVABILITY]",
         "[STRICT CONSTRAINT]",
+        "I am currently processing this request internally.",
         "My linguistic output is currently stalled",
         "## CRITICAL: Action Execution Rules",
         "WRITE_FILE: architecture_overview.md",
@@ -256,6 +257,81 @@ class GlobalMemorySync:
 
     def get_sync_log(self, limit: int = 20) -> List[dict]:
         return self.sync_log[-limit:]
+
+    def optimize_collective_memory(self, max_age_days: int = 90, min_access_count: int = 0) -> dict:
+        """Phase 7: Collective Memory Optimization. Prunes old/unused and consolidates duplicates."""
+        import logging as _log
+        _logger = _log.getLogger("GlobalMemory")
+        pruned = 0
+        consolidated = 0
+        total_before = len(self.entries_metadata)
+        protected_types = {"source_anchor", "introspection", "reasoning_state"}
+        to_remove = []
+        now = datetime.now()
+
+        for eid, meta in list(self.entries_metadata.items()):
+            if meta.get("memory_type", "knowledge") in protected_types:
+                continue
+            try:
+                age_days = (now - datetime.fromisoformat(meta.get("created_at", now.isoformat()))).days
+            except Exception:
+                age_days = 0
+            if age_days > max_age_days and meta.get("access_count", 0) <= min_access_count:
+                to_remove.append(eid)
+
+        for eid in to_remove:
+            del self.entries_metadata[eid]
+            if CHROMA_AVAILABLE:
+                try:
+                    self.collection.delete(ids=[eid])
+                except Exception:
+                    pass
+            pruned += 1
+
+        seen: Dict[str, str] = {}
+        for eid, meta in list(self.entries_metadata.items()):
+            content = meta.get("content", "")[:200].lower().strip()
+            sig = f"{meta.get('author', '')}:{hash(content) & 0xFFFF:04x}"
+            if sig in seen and seen[sig] != eid:
+                existing_eid = seen[sig]
+                ea = self.entries_metadata.get(existing_eid, {}).get("access_count", 0)
+                ca = meta.get("access_count", 0)
+                rid = eid if ca <= ea else existing_eid
+                if rid in self.entries_metadata:
+                    del self.entries_metadata[rid]
+                    if CHROMA_AVAILABLE:
+                        try:
+                            self.collection.delete(ids=[rid])
+                        except Exception:
+                            pass
+                    consolidated += 1
+                if rid == existing_eid:
+                    seen[sig] = eid
+            else:
+                seen[sig] = eid
+
+        if pruned > 0 or consolidated > 0:
+            self._save_metadata()
+            _logger.info(f"[GlobalMemory] Optimization: pruned={pruned}, consolidated={consolidated}")
+
+        return {"total_before": total_before, "total_after": len(self.entries_metadata),
+                "pruned": pruned, "consolidated": consolidated, "timestamp": now.isoformat()}
+
+    def get_memory_health(self) -> dict:
+        """Phase 7: Collective memory health metrics for dashboard."""
+        stats = self.get_stats()
+        total = stats["total_memories"]
+        total_accesses = stats["total_accesses"]
+        avg_access = total_accesses / total if total > 0 else 0.0
+        type_count = len(stats.get("by_type", {}))
+        author_count = len(stats.get("by_author", {}))
+        return {
+            "total_memories": total, "total_accesses": total_accesses,
+            "avg_access_rate": round(avg_access, 2),
+            "type_diversity": type_count, "author_diversity": author_count,
+            "backend": stats["backend"],
+            "health_score": round(min(1.0, (avg_access * 0.3 + type_count * 0.1 + author_count * 0.05)), 3)
+        }
 
 # Singleton
 _global_mem: Optional[GlobalMemorySync] = None

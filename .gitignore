@@ -24,3 +24,6 @@ dashboard/dist/
 .gemini/
 .agent/
 brain/
+
+# Secrets vault
+.swarm/

@@ -279,9 +279,13 @@ async def llm_chat(
                     }
                 
                 if not content:
+                    if thought:
+                        content = "I am currently processing this request internally."
+                    else:
+                        content = "My linguistic output is currently stalled. Please retry."
                     return {
-                        "content": "My linguistic output is currently stalled. Please retry.",
-                        "thought": ""
+                        "content": content,
+                        "thought": thought
                     }
                 
                 return {

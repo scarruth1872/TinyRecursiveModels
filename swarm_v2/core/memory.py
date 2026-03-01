@@ -114,6 +114,7 @@ class AgentMemory:
         "[EXECUTION MODE ACTIVE]",
         "[MESH OBSERVABILITY]",
         "[STRICT CONSTRAINT]",
+        "I am currently processing this request internally.",
         "My linguistic output is currently stalled",
         "## CRITICAL: Action Execution Rules",
         "WRITE_FILE: architecture_overview.md",
@@ -183,6 +184,50 @@ class AgentMemory:
 
     def clear_short_term(self):
         self.short_term = []
+
+    def compress_history(self, keep_recent: int = 10) -> Dict[str, Any]:
+        """
+        Recursively compress older messages for near-infinite context.
+        Messages beyond `keep_recent` are compressed into concise summaries.
+        """
+        if len(self.short_term) <= keep_recent:
+            return {"original": len(self.short_term), "compressed": 0, "ratio": 1.0}
+
+        recent = self.short_term[-keep_recent:]
+        older = self.short_term[:-keep_recent]
+
+        compressed = []
+        for turn in older:
+            content = turn.get("content", "")
+            first_sentence = content.split(".")[0][:80].strip()
+            if not first_sentence:
+                first_sentence = content[:60].strip()
+            compressed.append({
+                "sender": turn["sender"],
+                "content": f"[compressed] {first_sentence}",
+                "role": turn.get("role", ""),
+                "timestamp": turn.get("timestamp", ""),
+                "compressed": True,
+            })
+
+        original_chars = sum(len(t.get("content", "")) for t in older)
+        compressed_chars = sum(len(t.get("content", "")) for t in compressed)
+        self.short_term = compressed + recent
+
+        return {
+            "original": len(older) + len(recent),
+            "compressed": len(compressed),
+            "kept_verbatim": len(recent),
+            "original_chars": original_chars,
+            "compressed_chars": compressed_chars,
+            "ratio": round(compressed_chars / max(1, original_chars), 3),
+        }
+
+    def get_compressed_context(self, max_turns: int = 20) -> str:
+        """Build context with automatic compression applied."""
+        if len(self.short_term) > max_turns:
+            self.compress_history(keep_recent=max_turns // 2)
+        return self.get_context_window(max_turns=max_turns)
 
     def export_all(self) -> Dict:
         return {

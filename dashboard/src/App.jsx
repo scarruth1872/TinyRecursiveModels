@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -9,7 +10,8 @@ import {
   TestTube, Package, Eye, Check, Ban, RotateCcw, Rocket, ScrollText,
   BookOpen, Sparkles, Trash2, Upload, GraduationCap, Network, Database,
   Wrench, Globe, Radio, Orbit, LayoutDashboard, Layers,
-  Beaker, GitMerge, Server
+  Beaker, GitMerge, Server, Kanban, ShieldAlert, Mail, Bug, KeyRound,
+  Scan, Inbox, AlertTriangle
 } from 'lucide-react';
 import axios from 'axios';
 import MeshHeatmap from './components/MeshHeatmap';
@@ -30,6 +32,9 @@ const Sidebar = ({ activeTab, onTabChange, stats }) => {
     { id: 'verification', label: '11 VERIFICATION', color: 'teal' },
     { id: 'infra', label: '12 INFRASTRUCTURE', color: 'pink' },
     { id: 'testing', label: '13 TESTING', color: 'indigo' },
+    { id: 'kanban', label: '14 KANBAN BOARD', color: 'purple' },
+    { id: 'ddr', label: '15 DDR & VAULT', color: 'red' },
+    { id: 'comms', label: '16 AGENT COMMS', color: 'cyan' },
   ];
 
   return (
@@ -84,6 +89,26 @@ export default function App() {
   const [testingData, setTestingData] = useState({ stats: null, runs: [] });
   const [overview, setOverview] = useState({});
 
+  // QIAE Module State
+  const [kanbanBoard, setKanbanBoard] = useState({});
+  const [kanbanStats, setKanbanStats] = useState({});
+  const [newCardTitle, setNewCardTitle] = useState('');
+  const [newCardAssignee, setNewCardAssignee] = useState('');
+  const [newCardPriority, setNewCardPriority] = useState('medium');
+  const [ddrAntibodies, setDdrAntibodies] = useState([]);
+  const [ddrStats, setDdrStats] = useState({});
+  const [ddrScanCode, setDdrScanCode] = useState('');
+  const [ddrScanResult, setDdrScanResult] = useState(null);
+  const [secretKeys, setSecretKeys] = useState([]);
+  const [mailboxAgents, setMailboxAgents] = useState([]);
+  const [selectedMailbox, setSelectedMailbox] = useState(null);
+  const [mailboxMessages, setMailboxMessages] = useState([]);
+  const [sendMsgTo, setSendMsgTo] = useState('');
+  const [sendMsgBody, setSendMsgBody] = useState('');
+  const [sendMsgFrom, setSendMsgFrom] = useState('operator');
+  const [uwMissions, setUwMissions] = useState([]);
+  const [portableSkills, setPortableSkills] = useState([]);
+
   const chatEndRef = useRef(null);
 
   // Sync Logic
@@ -105,7 +130,7 @@ export default function App() {
 
         setExperts(expertsData);
         if (expertsData.length > 0 && !selectedRole) setSelectedRole(expertsData[0].role);
-        
+
         // Fetch artifacts with content preview for display
         const artRes = await fetch(`${API_BASE}/artifacts?include_content=true`);
         const artData = await artRes.json();
@@ -158,6 +183,31 @@ export default function App() {
             fetch(`${API_BASE}/testing/runs`).then(res => res.json())
           ]);
           setTestingData({ stats: statsRes, runs: runsRes.runs || [] });
+        } else if (tab === 'kanban') {
+          const [boardRes, statsRes] = await Promise.all([
+            fetch(`${API_BASE}/kanban/board`).then(r => r.json()),
+            fetch(`${API_BASE}/kanban/stats`).then(r => r.json())
+          ]);
+          setKanbanBoard(boardRes);
+          setKanbanStats(statsRes);
+        } else if (tab === 'ddr') {
+          const [abRes, statsRes, keysRes] = await Promise.all([
+            fetch(`${API_BASE}/ddr/antibodies`).then(r => r.json()),
+            fetch(`${API_BASE}/ddr/stats`).then(r => r.json()),
+            fetch(`${API_BASE}/secrets/keys`).then(r => r.json())
+          ]);
+          setDdrAntibodies(abRes.antibodies || []);
+          setDdrStats(statsRes);
+          setSecretKeys(keysRes.keys || []);
+        } else if (tab === 'comms') {
+          const [agentsRes, missionsRes, skillsRes] = await Promise.all([
+            fetch(`${API_BASE}/mailbox/agents`).then(r => r.json()),
+            fetch(`${API_BASE}/ultrawork/missions`).then(r => r.json()),
+            fetch(`${API_BASE}/skills/portable`).then(r => r.json())
+          ]);
+          setMailboxAgents(agentsRes.agents || []);
+          setUwMissions(missionsRes.missions || []);
+          setPortableSkills(skillsRes.skills || []);
         }
       } catch (error) {
         console.error(`Error fetching data for tab ${tab}:`, error);
@@ -1280,6 +1330,315 @@ export default function App() {
               </div>
             </motion.div>
           )}
+
+          {/* 14 KANBAN BOARD */}
+          {activeTab === 'kanban' && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
+              <div className="flex justify-between items-end">
+                <h1 className="section-title">Vibe Kanban // Task Orchestration</h1>
+                <div className="flex items-center gap-4">
+                  <div className="tag tag-success">{kanbanStats.total_cards || 0} Cards</div>
+                  <div className="tag">{kanbanStats.in_progress_count || 0} Active</div>
+                </div>
+              </div>
+
+              {/* Card Creator */}
+              <div className="panel">
+                <div className="panel-header">
+                  <h2 className="panel-title">Create Task Card</h2>
+                  <Plus className="panel-icon" size={18} />
+                </div>
+                <div className="panel-body flex gap-4 items-end">
+                  <input value={newCardTitle} onChange={e => setNewCardTitle(e.target.value)} placeholder="Task title..." className="input-field flex-1" />
+                  <input value={newCardAssignee} onChange={e => setNewCardAssignee(e.target.value)} placeholder="Assignee (agent)" className="input-field" style={{ maxWidth: 180 }} />
+                  <select value={newCardPriority} onChange={e => setNewCardPriority(e.target.value)} className="input-field" style={{ maxWidth: 140 }}>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                  </select>
+                  <button className="button-primary" disabled={!newCardTitle.trim()} onClick={async () => {
+                    await axios.post(`${API_BASE}/kanban/cards`, { title: newCardTitle, assignee: newCardAssignee, priority: newCardPriority });
+                    setNewCardTitle(''); setNewCardAssignee('');
+                    const [b, s] = await Promise.all([fetch(`${API_BASE}/kanban/board`).then(r => r.json()), fetch(`${API_BASE}/kanban/stats`).then(r => r.json())]);
+                    setKanbanBoard(b); setKanbanStats(s);
+                  }}>
+                    <Plus size={16} /><span>Create</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Kanban Columns */}
+              <div className="grid grid-cols-4 gap-4 flex-1 min-h-0">
+                {['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'].map(col => (
+                  <div key={col} className="panel flex flex-col min-h-0">
+                    <div className="panel-header">
+                      <h2 className="panel-title text-xs">{col.replace('_', ' ')}</h2>
+                      <div className="tag text-[8px]">{(kanbanBoard[col] || []).length}</div>
+                    </div>
+                    <div className="panel-body flex-1 overflow-y-auto custom-scrollbar" style={{ maxHeight: 500 }}>
+                      <div className="space-y-2">
+                        {(kanbanBoard[col] || []).map(card => (
+                          <div key={card.card_id} className="card-secondary">
+                            <div className="flex justify-between items-start mb-1">
+                              <span className="font-bold text-sm">{card.title}</span>
+                              <div className={`tag text-[7px] px-1 ${card.priority === 'critical' ? 'tag-danger' : card.priority === 'high' ? 'tag-warning' : 'tag-info'
+                                }`}>{card.priority}</div>
+                            </div>
+                            {card.assignee && <div className="text-[9px] text-text-secondary">Agent: <span className="text-accent-primary">{card.assignee}</span></div>}
+                            {card.allocated_port > 0 && <div className="text-[9px] text-text-secondary">Port: {card.allocated_port}</div>}
+                            <div className="flex gap-1 mt-2">
+                              {col === 'TODO' && <button className="glass-button text-[8px] py-0.5 px-2" onClick={async () => {
+                                await axios.post(`${API_BASE}/kanban/cards/${card.card_id}/move`, { target_status: 'IN_PROGRESS' });
+                                const b = await fetch(`${API_BASE}/kanban/board`).then(r => r.json()); setKanbanBoard(b);
+                              }}>▶ Start</button>}
+                              {col === 'IN_PROGRESS' && <button className="glass-button text-[8px] py-0.5 px-2" onClick={async () => {
+                                await axios.post(`${API_BASE}/kanban/cards/${card.card_id}/move`, { target_status: 'REVIEW' });
+                                const b = await fetch(`${API_BASE}/kanban/board`).then(r => r.json()); setKanbanBoard(b);
+                              }}>⏫ Review</button>}
+                              {col === 'REVIEW' && <>
+                                <button className="glass-button text-[8px] py-0.5 px-2" style={{ color: '#22c55e' }} onClick={async () => {
+                                  await axios.post(`${API_BASE}/kanban/cards/${card.card_id}/move`, { target_status: 'DONE' });
+                                  const b = await fetch(`${API_BASE}/kanban/board`).then(r => r.json()); setKanbanBoard(b);
+                                }}>✓ Done</button>
+                                <button className="glass-button text-[8px] py-0.5 px-2" style={{ color: '#f97316' }} onClick={async () => {
+                                  await axios.post(`${API_BASE}/kanban/cards/${card.card_id}/move`, { target_status: 'IN_PROGRESS' });
+                                  const b = await fetch(`${API_BASE}/kanban/board`).then(r => r.json()); setKanbanBoard(b);
+                                }}>↩ Rework</button>
+                              </>}
+                            </div>
+                          </div>
+                        ))}
+                        {(kanbanBoard[col] || []).length === 0 && (
+                          <div className="text-center py-8 text-text-secondary opacity-30 text-[10px] font-mono">EMPTY</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* 15 DDR & VAULT */}
+          {activeTab === 'ddr' && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
+              <h1 className="section-title">Digital DNA Repository & Secrets Vault</h1>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="stat-card">
+                  <div className="flex items-center justify-between"><span className="stat-card-label">Total Antibodies</span><ShieldAlert className="stat-card-icon" size={20} /></div>
+                  <div className="stat-card-value">{ddrStats.total_antibodies || 0}</div>
+                </div>
+                <div className="stat-card">
+                  <div className="flex items-center justify-between"><span className="stat-card-label">Errors Prevented</span><Bug className="stat-card-icon" size={20} /></div>
+                  <div className="stat-card-value">{ddrStats.total_prevented || 0}</div>
+                </div>
+                <div className="stat-card">
+                  <div className="flex items-center justify-between"><span className="stat-card-label">Vault Keys</span><KeyRound className="stat-card-icon" size={20} /></div>
+                  <div className="stat-card-value">{secretKeys.length}</div>
+                </div>
+                <div className="stat-card">
+                  <div className="flex items-center justify-between"><span className="stat-card-label">Last Scan</span><Scan className="stat-card-icon" size={20} /></div>
+                  <div className="stat-card-value text-sm">{ddrStats.last_scan || 'Never'}</div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
+                {/* Antibody List */}
+                <div className="panel flex flex-col min-h-0">
+                  <div className="panel-header">
+                    <h2 className="panel-title">Active Antibodies</h2>
+                    <ShieldAlert className="panel-icon" size={18} />
+                  </div>
+                  <div className="panel-body flex-1 overflow-y-auto custom-scrollbar" style={{ maxHeight: 400 }}>
+                    {ddrAntibodies.map((ab, i) => (
+                      <div key={ab.error_type + '-' + i} className="card-secondary mb-2">
+                        <div className="flex justify-between items-start">
+                          <span className="font-bold text-sm text-accent-danger">{ab.error_type}</span>
+                          <div className={`tag text-[7px] ${ab.severity === 'critical' ? 'tag-danger' : ab.severity === 'high' ? 'tag-warning' : 'tag-info'}`}>
+                            {ab.severity || 'medium'}
+                          </div>
+                        </div>
+                        <p className="text-xs text-text-secondary mt-1">{ab.fix}</p>
+                        {ab.pattern && <div className="text-[9px] font-mono text-accent-primary/60 mt-1">Pattern: {ab.pattern}</div>}
+                      </div>
+                    ))}
+                    {ddrAntibodies.length === 0 && <div className="text-center py-8 text-text-secondary opacity-40">No antibodies registered</div>}
+                  </div>
+                </div>
+
+                {/* Code Scanner + Vault */}
+                <div className="flex flex-col gap-4">
+                  <div className="panel">
+                    <div className="panel-header">
+                      <h2 className="panel-title">Code Scanner</h2>
+                      <Scan className="panel-icon" size={18} />
+                    </div>
+                    <div className="panel-body">
+                      <textarea value={ddrScanCode} onChange={e => setDdrScanCode(e.target.value)}
+                        placeholder='Paste code to scan for vulnerabilities...\ne.g. query = f"SELECT * FROM users WHERE id={user_id}"'
+                        rows="4" className="input-field font-mono w-full" />
+                    </div>
+                    <div className="panel-footer">
+                      <button className="button-primary" disabled={!ddrScanCode.trim()} onClick={async () => {
+                        const res = await axios.post(`${API_BASE}/ddr/scan`, { code: ddrScanCode });
+                        setDdrScanResult(res.data);
+                      }}>
+                        <Scan size={16} /><span>Scan Code</span>
+                      </button>
+                    </div>
+                    {ddrScanResult && (
+                      <div className="p-4 border-t border-border-color">
+                        <div className="text-xs font-bold mb-2">
+                          {ddrScanResult.matches?.length > 0
+                            ? <span className="text-accent-danger">⚠ {ddrScanResult.matches.length} vulnerabilities found</span>
+                            : <span className="text-accent-success">✓ No known vulnerabilities detected</span>}
+                        </div>
+                        {ddrScanResult.matches?.map((m, i) => (
+                          <div key={i} className="text-[10px] font-mono text-accent-danger/80 mb-1">
+                            [{m.error_type}] {m.fix}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="panel">
+                    <div className="panel-header">
+                      <h2 className="panel-title">Secrets Vault</h2>
+                      <KeyRound className="panel-icon" size={18} />
+                    </div>
+                    <div className="panel-body">
+                      {secretKeys.length > 0 ? secretKeys.map(k => (
+                        <div key={k} className="flex items-center gap-2 py-1 border-b border-border-color">
+                          <Lock size={12} className="text-accent-warning" />
+                          <span className="font-mono text-sm">{k}</span>
+                          <span className="text-[9px] text-text-secondary ml-auto">ENCRYPTED</span>
+                        </div>
+                      )) : (
+                        <div className="text-center py-6 text-text-secondary opacity-40 text-sm">Vault empty — no secrets stored</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* 16 AGENT COMMS */}
+          {activeTab === 'comms' && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col h-full gap-6">
+              <h1 className="section-title">Agent Communications & Missions</h1>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
+                {/* Mailbox */}
+                <div className="panel flex flex-col min-h-0">
+                  <div className="panel-header">
+                    <h2 className="panel-title">Agent Mailboxes</h2>
+                    <Inbox className="panel-icon" size={18} />
+                  </div>
+                  <div className="panel-body">
+                    <div className="space-y-1 mb-4">
+                      {mailboxAgents.map(agent => (
+                        <button key={agent} className={`w-full text-left px-3 py-2 rounded-lg text-sm font-mono transition-all ${selectedMailbox === agent ? 'bg-accent-primary/20 text-accent-primary border border-accent-primary/30' : 'hover:bg-white/5 text-text-secondary'
+                          }`} onClick={async () => {
+                            setSelectedMailbox(agent);
+                            const res = await fetch(`${API_BASE}/mailbox/${agent}/inbox`).then(r => r.json());
+                            setMailboxMessages(res.messages || []);
+                          }}>
+                          <Mail size={12} className="inline mr-2" />{agent}
+                        </button>
+                      ))}
+                      {mailboxAgents.length === 0 && <div className="text-center py-4 text-text-secondary opacity-40 text-xs">No mailboxes found</div>}
+                    </div>
+
+                    {selectedMailbox && (
+                      <div className="border-t border-border-color pt-3">
+                        <div className="text-[9px] font-mono text-text-secondary uppercase mb-2">Inbox: {selectedMailbox} ({mailboxMessages.length} msgs)</div>
+                        <div className="space-y-2 max-h-40 overflow-y-auto custom-scrollbar">
+                          {mailboxMessages.map((msg, i) => (
+                            <div key={i} className="card-secondary text-[10px]">
+                              <div className="font-bold">{msg.subject || '(no subject)'}</div>
+                              <div className="text-text-secondary">{msg.body?.slice(0, 100)}</div>
+                              <div className="text-[8px] text-accent-primary mt-1">From: {msg.from}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Send Message */}
+                  <div className="panel-footer flex-col gap-2">
+                    <div className="text-[9px] font-mono text-text-secondary uppercase">Send Message</div>
+                    <input value={sendMsgFrom} onChange={e => setSendMsgFrom(e.target.value)} placeholder="From agent" className="input-field text-xs" />
+                    <input value={sendMsgTo} onChange={e => setSendMsgTo(e.target.value)} placeholder="To agent" className="input-field text-xs" />
+                    <textarea value={sendMsgBody} onChange={e => setSendMsgBody(e.target.value)} placeholder="Message body..." rows="2" className="input-field text-xs" />
+                    <button className="button-primary w-full justify-center" disabled={!sendMsgTo.trim() || !sendMsgBody.trim()} onClick={async () => {
+                      await axios.post(`${API_BASE}/mailbox/send`, { from_agent: sendMsgFrom, to_agent: sendMsgTo, body: sendMsgBody, subject: 'Dashboard Message' });
+                      setSendMsgBody(''); setSendMsgTo('');
+                    }}>
+                      <Send size={14} /><span>Send</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Ultrawork Missions */}
+                <div className="panel flex flex-col min-h-0">
+                  <div className="panel-header">
+                    <h2 className="panel-title">Ultrawork Missions</h2>
+                    <Rocket className="panel-icon" size={18} />
+                  </div>
+                  <div className="panel-body flex-1 overflow-y-auto custom-scrollbar">
+                    {uwMissions.length > 0 ? uwMissions.map(m => (
+                      <div key={m.mission_id} className="card-secondary mb-2">
+                        <div className="flex justify-between items-start">
+                          <span className="font-bold text-sm">{m.objective}</span>
+                          <div className={`tag text-[7px] ${m.phase === 'completed' ? 'tag-success' : m.phase === 'acting' ? 'tag-warning' : 'tag-info'
+                            }`}>{m.phase}</div>
+                        </div>
+                        <div className="text-[9px] text-text-secondary mt-1">ID: {m.mission_id}</div>
+                        {m.attempt > 1 && <div className="text-[9px] text-accent-warning">Attempt #{m.attempt}</div>}
+                      </div>
+                    )) : (
+                      <div className="text-center py-12 text-text-secondary opacity-40">
+                        <Rocket size={32} className="mx-auto mb-2" />
+                        <p className="text-xs">No active missions</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Portable Skills */}
+                <div className="panel flex flex-col min-h-0">
+                  <div className="panel-header">
+                    <h2 className="panel-title">Portable Skills (SKILL.md)</h2>
+                    <BookOpen className="panel-icon" size={18} />
+                  </div>
+                  <div className="panel-body flex-1 overflow-y-auto custom-scrollbar">
+                    {portableSkills.length > 0 ? portableSkills.map(s => (
+                      <div key={s.name} className="card-secondary mb-2">
+                        <div className="flex justify-between items-start">
+                          <span className="font-bold text-sm">{s.name}</span>
+                          <div className={`tag text-[7px] ${s.source === 'skill_md' ? 'tag-success' : 'tag-info'}`}>
+                            {s.source === 'skill_md' ? 'SKILL.md' : 'Python'}
+                          </div>
+                        </div>
+                        <p className="text-xs text-text-secondary mt-1">{s.description}</p>
+                      </div>
+                    )) : (
+                      <div className="text-center py-12 text-text-secondary opacity-40">
+                        <BookOpen size={32} className="mx-auto mb-2" />
+                        <p className="text-xs">No skills discovered</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </main>
     </div>

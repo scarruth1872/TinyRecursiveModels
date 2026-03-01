@@ -358,6 +358,52 @@ class AgentMesh:
     def get_message_log(self, limit: int = 20) -> List[dict]:
         return self.message_log[-limit:]
 
+    def reconfigure_mesh(self) -> dict:
+        """
+        Phase 7: Real-time Mesh Reconfiguration.
+        Detects failed nodes, redistributes their specialties to surviving nodes,
+        and logs reconfiguration events.
+        """
+        alive = [n for n in self.nodes.values() if n.is_alive]
+        failed = [n for n in self.nodes.values() if not n.is_alive]
+
+        if not failed:
+            return {"action": "none", "alive": len(alive), "failed": 0}
+
+        redistributed = 0
+        for dead_node in failed:
+            orphan_specialties = dead_node.specialties
+            if orphan_specialties and alive:
+                # Distribute orphan specialties round-robin to alive nodes
+                for i, spec in enumerate(orphan_specialties):
+                    target = alive[i % len(alive)]
+                    if spec not in target.specialties:
+                        target.specialties.append(spec)
+                        redistributed += 1
+
+            # Log the reconfiguration event
+            self.message_log.append({
+                "type": "mesh_reconfiguration",
+                "failed_node": dead_node.name,
+                "failed_node_id": dead_node.node_id,
+                "orphan_specialties": orphan_specialties,
+                "redistributed_to": [n.name for n in alive],
+                "timestamp": datetime.now().isoformat(),
+            })
+
+            # Mark as explicitly offline (keep in registry for recovery)
+            dead_node.status = "offline"
+
+        self.topology_version += 1
+        self._save_state()
+
+        return {
+            "action": "reconfigured",
+            "alive": len(alive),
+            "failed": len(failed),
+            "specialties_redistributed": redistributed,
+            "topology_version": self.topology_version
+        }
 
 # Singleton
 _mesh: Optional[AgentMesh] = None

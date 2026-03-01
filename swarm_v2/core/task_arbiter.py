@@ -717,6 +717,62 @@ class TaskArbiter:
             return task
         return None
 
+    async def decentralized_assign(self, task_description: str, candidates: List[str] = None,
+                                    timeout_s: float = 5.0) -> Dict:
+        """
+        Phase 7: Decentralized Task Arbitration.
+        Agents vote on task assignments based on expertise match.
+        Falls back to centralized arbitration if consensus fails.
+        """
+        if candidates is None:
+            candidates = list(self.agent_workloads.keys())
+
+        if not candidates:
+            return {"method": "fallback", "assigned_to": None, "reason": "no_candidates"}
+
+        # Compute expertise score for each candidate
+        votes: List[tuple] = []  # (score, agent_id)
+        task_lower = task_description.lower()
+
+        for agent_id in candidates:
+            wl = self.agent_workloads.get(agent_id)
+            if not wl or wl.is_busy:
+                continue
+            score = 0
+            # Role relevance
+            if wl.role.lower() in task_lower:
+                score += 10
+            # Historical success: fewer total tasks = fresher agent = lower priority
+            score += min(len(wl.task_history), 10)
+            # Not busy bonus
+            score += 5
+            votes.append((score, agent_id))
+
+        if not votes:
+            return {"method": "fallback", "assigned_to": None, "reason": "all_busy"}
+
+        votes.sort(key=lambda x: -x[0])
+        winner_score, winner_id = votes[0]
+
+        # Consensus check: winner must have clear lead (>= 2 point margin)
+        if len(votes) > 1 and votes[0][0] - votes[1][0] < 2:
+            # No clear consensus — use centralized as fallback
+            logger.info(f"[DecentralizedArbiter] No consensus (top scores: {votes[0][0]}, {votes[1][0]}). Falling back to centralized.")
+            return {
+                "method": "centralized_fallback",
+                "assigned_to": winner_id,
+                "votes": [{"agent": v[1], "score": v[0]} for v in votes[:5]],
+                "reason": "no_consensus"
+            }
+
+        logger.info(f"[DecentralizedArbiter] Consensus: {winner_id} (score={winner_score})")
+        return {
+            "method": "decentralized",
+            "assigned_to": winner_id,
+            "votes": [{"agent": v[1], "score": v[0]} for v in votes[:5]],
+            "reason": "consensus"
+        }
+
 # Global singleton
 _arbiter = None
 

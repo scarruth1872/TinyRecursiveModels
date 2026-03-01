@@ -46,6 +46,10 @@ class MetricType(Enum):
     SKILL_ACQUISITION = "skill_acquisition"
     GPU_EFFICIENCY = "gpu_efficiency"
     MESH_HEALTH = "mesh_health"
+    # Phase 7 additions
+    EMOTIONAL_RESONANCE = "emotional_resonance"
+    AMPLIFICATION_FACTOR = "amplification_factor"
+    MEMORY_HEALTH = "memory_health"
 
 
 @dataclass
@@ -390,7 +394,44 @@ class SwarmPerformanceInsights:
             success_rate = (self._session_tasks - self._session_errors) / self._session_tasks * 100
             self.record_metric(MetricType.TASK_SUCCESS, success_rate)
             metrics["task_success_rate"] = success_rate
-        
+
+        # Phase 7: Emotional Resonance
+        try:
+            from swarm_v2.core.resonance_engine import get_resonance_engine
+            re = get_resonance_engine()
+            eri = re.get_emotional_resonance_index()
+            metrics["emotional_resonance"] = eri.get("index", 0.0)
+            self.record_metric(MetricType.EMOTIONAL_RESONANCE, metrics["emotional_resonance"])
+        except Exception as e:
+            logger.warning(f"Could not collect resonance metrics: {e}")
+            metrics["emotional_resonance"] = 0.0
+
+        # Phase 7: Amplification Factor (from CRA sessions)
+        try:
+            from swarm_v2.core.collaborative_reasoning import get_cra_engine
+            cra = get_cra_engine()
+            history = cra.get_session_history(limit=5)
+            if history:
+                avg_amp = sum(s["amplification_factor"] for s in history) / len(history)
+            else:
+                avg_amp = 1.0
+            metrics["amplification_factor"] = avg_amp
+            self.record_metric(MetricType.AMPLIFICATION_FACTOR, avg_amp)
+        except Exception as e:
+            logger.warning(f"Could not collect CRA metrics: {e}")
+            metrics["amplification_factor"] = 1.0
+
+        # Phase 7: Memory Health
+        try:
+            from swarm_v2.core.global_memory import get_global_memory
+            mem = get_global_memory()
+            mh = mem.get_memory_health()
+            metrics["memory_health_score"] = mh.get("health_score", 0.0)
+            self.record_metric(MetricType.MEMORY_HEALTH, metrics["memory_health_score"])
+        except Exception as e:
+            logger.warning(f"Could not collect memory health metrics: {e}")
+            metrics["memory_health_score"] = 0.0
+
         return metrics
     
     def _calculate_trend(self, current: float, previous: float) -> str:

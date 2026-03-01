@@ -5,8 +5,9 @@ import os
 import re
 import json
 import random
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Callable
 from datetime import datetime, timedelta
+from dataclasses import dataclass, field
 
 logger = logging.getLogger("ProactiveLoop")
 
@@ -15,10 +16,55 @@ ARTIFACTS_API = "http://127.0.0.1:8001/artifacts?grouped=false"
 RESEARCH_API = "http://127.0.0.1:8001/research/stats"
 SWARM_CHAT_API = "http://127.0.0.1:8001/swarm/chat"
 
+
+@dataclass
+class ScheduledTask:
+    """A recurring task with cron-like scheduling."""
+    name: str
+    cron_expr: str  # e.g. "*/30 * * * *" (every 30 min)
+    handler: Optional[Callable] = None
+    action_description: str = ""
+    enabled: bool = True
+    last_run: Optional[datetime] = None
+    run_count: int = 0
+
+
+def _cron_matches(cron_expr: str, dt: datetime) -> bool:
+    """
+    Lightweight cron expression matcher.
+    Supports: minute hour day_of_month month day_of_week
+    Special values: * (any), */N (every N), N (exact)
+    """
+    parts = cron_expr.strip().split()
+    if len(parts) != 5:
+        return False
+
+    values = [dt.minute, dt.hour, dt.day, dt.month, dt.weekday()]
+
+    for part, val in zip(parts, values):
+        if part == "*":
+            continue
+        if part.startswith("*/"):
+            try:
+                step = int(part[2:])
+                if val % step != 0:
+                    return False
+            except ValueError:
+                return False
+        else:
+            try:
+                if int(part) != val:
+                    return False
+            except ValueError:
+                return False
+    return True
+
+
 class ProactiveOrchestrationLoop:
     """
     Enhanced background daemon for autonomous system evolution.
     Generates meaningful work when integration plan is complete.
+    Supports cron-based scheduled tasks and webhook triggers.
     """
     def __init__(self, manus_engine=None):
         self.manus_engine = manus_engine
@@ -27,6 +73,12 @@ class ProactiveOrchestrationLoop:
         self.proposals = []
         self.last_artifact_scan = None
         self.last_research_trigger = None
+
+        # Scheduled tasks (cron-based)
+        self._scheduled_tasks: List[ScheduledTask] = []
+        # Webhook handlers
+        self._webhooks: Dict[str, Callable] = {}
+
         self.system_improvement_tasks = [
             "Optimize TRM model loading and inference speed",
             "Improve artifact pipeline throughput and validation",
@@ -52,6 +104,38 @@ class ProactiveOrchestrationLoop:
             "Cross-modal intelligence for multi-skill agents"
         ]
 
+    def register_scheduled_task(self, name: str, cron_expr: str,
+                                handler: Callable = None,
+                                action_description: str = "") -> ScheduledTask:
+        """Register a cron-based recurring task."""
+        task = ScheduledTask(
+            name=name,
+            cron_expr=cron_expr,
+            handler=handler,
+            action_description=action_description or f"Scheduled: {name}",
+        )
+        self._scheduled_tasks.append(task)
+        logger.info(f"[Proactive] Registered scheduled task: {name} ({cron_expr})")
+        return task
+
+    def register_webhook(self, endpoint: str, handler: Callable):
+        """Register a webhook trigger."""
+        self._webhooks[endpoint] = handler
+        logger.info(f"[Proactive] Registered webhook: {endpoint}")
+
+    async def fire_webhook(self, endpoint: str, payload: Dict = None) -> Any:
+        """Fire a registered webhook handler."""
+        handler = self._webhooks.get(endpoint)
+        if not handler:
+            return {"error": f"No webhook for {endpoint}"}
+        try:
+            if asyncio.iscoroutinefunction(handler):
+                return await handler(payload or {})
+            return handler(payload or {})
+        except Exception as e:
+            logger.error(f"[Proactive] Webhook {endpoint} failed: {e}")
+            return {"error": str(e)}
+
     async def start(self):
         self.running = True
         logger.info("[Proactive] Enhanced growth loop activated. Generating autonomous work...")
@@ -70,19 +154,23 @@ class ProactiveOrchestrationLoop:
         """Scan for multiple sources of work and generate proposals."""
         all_proposals = []
         
-        # 1. Check integration plan gaps
+        # 1. Check scheduled tasks (cron)
+        scheduled_proposals = await self._check_scheduled_tasks()
+        all_proposals.extend(scheduled_proposals)
+
+        # 2. Check integration plan gaps
         plan_gaps = await self._scan_plan_gaps()
         all_proposals.extend(plan_gaps)
         
-        # 2. Check artifact pipeline for pending work
+        # 3. Check artifact pipeline for pending work
         artifact_proposals = await self._scan_artifacts()
         all_proposals.extend(artifact_proposals)
         
-        # 3. Check research daemon status
+        # 4. Check research daemon status
         research_proposals = await self._check_research_daemon()
         all_proposals.extend(research_proposals)
         
-        # 4. Generate system improvement tasks (if idle)
+        # 5. Generate system improvement tasks (if idle)
         if not all_proposals and (not self.last_artifact_scan or 
                                  (datetime.now() - self.last_artifact_scan).seconds > 3600):
             system_proposals = await self._generate_system_improvements()
@@ -97,6 +185,50 @@ class ProactiveOrchestrationLoop:
                     logger.info(f"[Proactive] PROPOSAL {proposal['id']} CREATED: {proposal['gap'][:60]}...")
         
         return all_proposals
+
+    async def _check_scheduled_tasks(self) -> List[Dict]:
+        """Check and execute any due cron-scheduled tasks."""
+        now = datetime.now()
+        proposals = []
+
+        for task in self._scheduled_tasks:
+            if not task.enabled:
+                continue
+
+            # Skip if already run this minute
+            if task.last_run and (now - task.last_run).total_seconds() < 60:
+                continue
+
+            if _cron_matches(task.cron_expr, now):
+                task.last_run = now
+                task.run_count += 1
+
+                # Execute handler if provided
+                if task.handler:
+                    try:
+                        if asyncio.iscoroutinefunction(task.handler):
+                            await task.handler()
+                        else:
+                            task.handler()
+                        logger.info(f"[Proactive] Executed scheduled: {task.name} (run #{task.run_count})")
+                    except Exception as e:
+                        logger.error(f"[Proactive] Scheduled task {task.name} failed: {e}")
+
+                # Also generate a proposal
+                proposal_id = f"sched_{task.name}_{int(now.timestamp())}"
+                proposals.append({
+                    "id": proposal_id,
+                    "gap": task.action_description,
+                    "status": "auto_executed",
+                    "timestamp": now.isoformat(),
+                    "suggested_agent": "Architect",
+                    "action": task.action_description,
+                    "priority": "medium",
+                    "source": "scheduled_task",
+                    "metadata": {"cron": task.cron_expr, "run_count": task.run_count},
+                })
+
+        return proposals
 
     async def _scan_plan_gaps(self) -> List[Dict]:
         """Detect unimplemented features in the integration plan."""
