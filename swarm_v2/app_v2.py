@@ -2383,22 +2383,39 @@ async def get_virtual_office_status():
     working_agents = {card.get("assignee"): card for card in in_progress_cards if card.get("assignee")}
     
     status_list = []
+    
+    managers = {
+        "gemini": {"manager": "Google Gemini", "department": "Product & Creative", "active_agents": 0, "status": "idle"},
+        "openrouter": {"manager": "OpenRouter", "department": "Operations & Compliance", "active_agents": 0, "status": "idle"},
+        "deepseek": {"manager": "DeepSeek API", "department": "Engineering & Logic", "active_agents": 0, "status": "idle"}
+    }
+
     for role, agent in engine_team.items():
-        if role in working_agents:
-            status_list.append({
-                "agent": role,
-                "status": "working",
-                "task": working_agents[role].get("title", ""),
-                "description": working_agents[role].get("description", "")
-            })
-        else:
-            status_list.append({
-                "agent": role,
-                "status": "idle",
-                "task": None,
-                "description": None
-            })
-    return {"agents": status_list}
+        is_working = role in working_agents
+        
+        backend = getattr(agent.persona, "llm_backend", "local")
+        department = getattr(agent.persona, "department", "General")
+        name = getattr(agent.persona, "name", role)
+        
+        if backend in managers and is_working:
+            managers[backend]["active_agents"] += 1
+            managers[backend]["status"] = "working"
+
+        status_list.append({
+            "agent": role,
+            "name": name,
+            "role": role,
+            "status": "working" if is_working else "idle",
+            "task": working_agents.get(role, {}).get("title", "") if is_working else None,
+            "description": working_agents.get(role, {}).get("description", "") if is_working else None,
+            "department": department,
+            "llm_backend": backend
+        })
+        
+    return {
+        "agents": status_list,
+        "regional_managers": list(managers.values())
+    }
 
 @app.get("/ultrawork/missions")
 async def list_ultrawork_missions():
