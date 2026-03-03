@@ -617,13 +617,14 @@ class BaseAgent:
                         contextual_sub_task = f"{sub_task}\n\n[DELEGATED CONTEXT FROM {self.persona.name}]:\n{task_context}"
                         sub_resp_obj = await target_agent.process_task(contextual_sub_task, sender=self.persona.name)
                         
-                        # Handle dict vs string return from process_task
                         if isinstance(sub_resp_obj, dict):
                             sub_response = sub_resp_obj.get("response", "[No Response Content]")
                         else:
                             sub_response = sub_resp_obj
                             
-                        executed.append(f"Delegated to {role}: {sub_task[:100]}\nResult: {sub_response[:300]}...")
+                        # Format avoiding over-truncation for UI logs
+                        res_str = f"{sub_response[:2000]}..." if len(sub_response) > 2000 else sub_response
+                        executed.append(f"Delegated to {role}: {sub_task[:150]}...\nResult: {res_str}")
                     except Exception as e:
                         executed.append(f"Failed delegation to {role}: {e}")
                 else:
@@ -798,9 +799,10 @@ class BaseAgent:
             
             try:
                 # PHASE 6: Strict timeout to prevent dashboard/socket hangs
+                # Increased to 120s to support slower remote reasoning models (e.g. DeepSeek, Gemini)
                 response_data = await asyncio.wait_for(
                     self._llm_generate(prefix_msg),
-                    timeout=45.0
+                    timeout=120.0
                 )
                 response, reasoning_trace = response_data
             except asyncio.TimeoutError:

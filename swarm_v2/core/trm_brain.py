@@ -67,7 +67,7 @@ class TRMBrain:
             print(f"[TRM Brain] Failed to load model: {e}")
             self._model = None
 
-    def reason(self, input_tokens: List[int], puzzle_id: int = 0) -> List[int]:
+    def reason(self, input_tokens: List[int], puzzle_id: int = 0, **kwargs) -> List[int]:
         """
         Perform recursive reasoning on a sequence of tokens.
         """
