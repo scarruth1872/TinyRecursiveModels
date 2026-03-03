@@ -93,17 +93,18 @@ class TRMBrain:
 
             carry = self._model.initial_carry(batch)
             
-            # Perform reasoning cycles
-            # The forward method returns (carry, outputs)
-            # We can run it multiple times if we want deeper recursion, 
-            # but the model itself has internal H/L cycles.
+            # Loop for dynamic H_cycles to achieve deep reasoning logic
+            total_preds = []
+            h_cycles = kwargs.get("h_cycles", self.config['H_cycles'])
             
-            new_carry, outputs = self._model(carry, batch)
-            
-            logits = outputs["logits"] # [1, seq_len, vocab_size]
-            preds = torch.argmax(logits, dim=-1).squeeze(0).cpu().tolist()
-            
-            return preds
+            for _ in range(h_cycles):
+                carry, outputs = self._model(carry, batch)
+                logits = outputs["logits"] # [1, seq_len, vocab_size]
+                # Extract the reasoning token predictions
+                preds = torch.argmax(logits, dim=-1).squeeze(0).cpu().tolist()
+                total_preds.extend(preds[:12]) # Take sequence snippet per cycle
+                
+            return total_preds
 
 def get_trm_brain():
     return TRMBrain()

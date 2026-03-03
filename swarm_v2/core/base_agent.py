@@ -18,6 +18,8 @@ class AgentPersona(BaseModel):
     specialties: List[str]
     avatar_color: str = "#00ff41"
     model: Optional[str] = None
+    department: str = "General"
+    llm_backend: str = "local"
 
 
 class Message(BaseModel):
@@ -67,7 +69,7 @@ class BaseAgent:
         
         # Phase 6: Distributed Cognitive Stack
         from swarm_v2.core.cognitive_stack import CognitiveStack
-        self.cognitive_stack = CognitiveStack(persona.name)
+        self.cognitive_stack = CognitiveStack(persona.name, llm_backend=persona.llm_backend)
         
         # Extended Task Tracking
         self.task_history: List[Dict[str, Any]] = []
@@ -466,7 +468,7 @@ class BaseAgent:
             
         return None
 
-    async def _execute_action_tags(self, response: str) -> str:
+    async def _execute_action_tags(self, response: str, task_context: str = "") -> str:
         """Scan LLM response for action tags and execute them with FileSkill.
 
         Supported tags:
@@ -611,7 +613,9 @@ class BaseAgent:
                     target_agent._recursion_depth = self._recursion_depth + 1
                     self.log_nodal_activity(f"DELEGATING to {role}: {sub_task[:40]}")
                     try:
-                        sub_resp_obj = await target_agent.process_task(sub_task, sender=self.persona.name)
+                        # Pass the original prompt context down so the delegated agent has the data to work with
+                        contextual_sub_task = f"{sub_task}\n\n[DELEGATED CONTEXT FROM {self.persona.name}]:\n{task_context}"
+                        sub_resp_obj = await target_agent.process_task(contextual_sub_task, sender=self.persona.name)
                         
                         # Handle dict vs string return from process_task
                         if isinstance(sub_resp_obj, dict):
@@ -805,7 +809,7 @@ class BaseAgent:
                 reasoning_trace = "[TIMEOUT_EXCEEDED]"
             
             self.log_nodal_activity("Commencing execution of action tags...")
-            response = await self._execute_action_tags(response)
+            response = await self._execute_action_tags(response, task_context=task)
             
             self.memory.add_turn("agent", response[:300], role=self.persona.name)
             self.memory.add_task_result(task[:60], response[:200])

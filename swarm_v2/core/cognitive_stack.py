@@ -21,9 +21,10 @@ class CognitiveStack:
     Hyper-efficient model stack for distributed agent intelligence.
     Gemma 3 1B (Executive) + Samsung TRM 7M (Reasoning).
     """
-    def __init__(self, agent_name: str, executive_model: str = "gemma3:270m"):
+    def __init__(self, agent_name: str, executive_model: str = "gemma3:270m", llm_backend: str = "local"):
         self.agent_name = agent_name
         self.executive_model = executive_model
+        self.llm_backend = llm_backend
         self.reasoning_core = get_trm_brain()
         self.stats = {
             "executive_calls": 0,
@@ -37,17 +38,18 @@ class CognitiveStack:
         self._last_harmony_score = 1.0  # Updated externally via tune_recursion_depth()
 
     async def _executive_generate(self, prompt: str, system_prompt: str = "") -> Tuple[str, str]:
-        """Calls the executive model for communication and tool calling via Ollama."""
+        """Calls the executive model for communication and tool calling via regional managers."""
         self.stats["executive_calls"] += 1
-        from swarm_v2.core.llm_brain import llm_chat
-        res = await llm_chat(
+        from swarm_v2.core.llm_router import route_llm_request
+        response, trace = await route_llm_request(
+            backend=self.llm_backend,
             system_prompt=system_prompt,
-            user_message=prompt,
-            model=self.executive_model,
+            prompt=prompt,
+            agent_name=self.agent_name
         )
-        if isinstance(res, dict):
-            return res.get("content", ""), res.get("thought", "")
-        return str(res), ""
+        if isinstance(response, dict):
+            return response.get("content", ""), response.get("thought", "")
+        return str(response), trace or ""
 
     def _should_offload_to_reasoning(self, prompt: str) -> bool:
         """Heuristic to detect if a prompt needs deep reasoning."""
@@ -106,10 +108,10 @@ class CognitiveStack:
             
             try:
                 tokens = [(ord(c) % 12) for c in prompt[:128]]
-                reasoning_preds = self.reasoning_core.reason(tokens)
+                reasoning_preds = self.reasoning_core.reason(tokens, h_cycles=self.h_cycles)
                 
-                logic_nodes = ["SYN", "ANA", "VAL", "GEN", "CMP", "EXT", "FLW", "INS", "RMT", "INF", "DDC", "LGC"]
-                trace_nodes = [logic_nodes[p % 12] for p in reasoning_preds[:12]]
+                logic_nodes = ["INF", "FLW", "GEN", "INS", "RMT", "CMP", "ANA", "DDC", "LGC", "EXT", "VAL", "SYN"]
+                trace_nodes = [logic_nodes[p % 12] for p in reasoning_preds]
                 trm_trace = f"[{'->'.join(trace_nodes)}]"
                 
                 reasoning_context = f"TRM_RECURSIVE_REASONING_STAGES: {trm_trace}"
@@ -167,5 +169,5 @@ class CognitiveStack:
             }
         }
 
-def get_cognitive_stack(agent_name: str):
-    return CognitiveStack(agent_name)
+def get_cognitive_stack(agent_name: str, llm_backend: str = "local"):
+    return CognitiveStack(agent_name, llm_backend=llm_backend)

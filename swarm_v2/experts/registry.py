@@ -23,6 +23,8 @@ EXPERTS_CONFIG = [
         "background": "Expert in system design, high-level planning, and scalable architecture patterns.",
         "specialties": ["System Design", "Scalability", "Infrastructure", "Microservices"],
         "avatar_color": "#00aaff",
+        "department": "Engineering & Logic",
+        "llm_backend": "deepseek",
         "skills": [FileSkill, DocSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill, RLMSkill],
     },
     {
@@ -31,6 +33,8 @@ EXPERTS_CONFIG = [
         "background": "Full-stack engineer with focus on clean code, design patterns, and rapid prototyping.",
         "specialties": ["Python", "JavaScript", "React", "Rust", "FastAPI"],
         "avatar_color": "#00ff41",
+        "department": "Engineering & Logic",
+        "llm_backend": "deepseek",
         "skills": [FileSkill, ShellSkill, CodeAnalysisSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill, TRMSkill],
     },
     {
@@ -39,6 +43,8 @@ EXPERTS_CONFIG = [
         "background": "Specializes in information retrieval, documentation analysis, and knowledge synthesis.",
         "specialties": ["Web Research", "Paper Analysis", "Fact Checking", "Summarization"],
         "avatar_color": "#ff00ff",
+        "department": "Product & Creative",
+        "llm_backend": "gemini",
         "skills": [WebSearchSkill, FileSkill, DocIngestionSkill, MCPToolSkill, HighQualityEmbeddingSkill, SpectralEmbeddingSkill],
     },
     {
@@ -47,6 +53,8 @@ EXPERTS_CONFIG = [
         "background": "Focused on complex logical deductions, mathematical proofs, and algorithm design. Uses TRM Reasoning for deep recursive loops (3-5 cycles) on every architecture task.",
         "specialties": ["Logic", "Math", "Algorithms", "Optimization", "Recursive Reasoning"],
         "avatar_color": "#ffff00",
+        "department": "Engineering & Logic",
+        "llm_backend": "deepseek",
         "skills": [FileSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill, TRMSkill, RLMSkill],
     },
     {
@@ -55,6 +63,8 @@ EXPERTS_CONFIG = [
         "background": "Expert in cybersecurity, vulnerability assessment, penetration testing, and auditing.",
         "specialties": ["Security", "Cryptography", "Pentesting", "OWASP"],
         "avatar_color": "#ff4444",
+        "department": "Operations & Compliance",
+        "llm_backend": "openrouter",
         "skills": [FileSkill, CodeAnalysisSkill, ShellSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill],
     },
     {
@@ -63,6 +73,8 @@ EXPERTS_CONFIG = [
         "background": "Specializes in CI/CD pipelines, containerization, cloud infrastructure, and deployment.",
         "specialties": ["Docker", "Kubernetes", "Cloud Native", "GitHub Actions"],
         "avatar_color": "#00ffff",
+        "department": "Operations & Compliance",
+        "llm_backend": "openrouter",
         "skills": [FileSkill, ShellSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill],
     },
     {
@@ -71,6 +83,8 @@ EXPERTS_CONFIG = [
         "background": "Focuses on aesthetic excellence, user experience, and modern design systems.",
         "specialties": ["Design Systems", "CSS", "Figma", "Accessibility"],
         "avatar_color": "#ff8800",
+        "department": "Product & Creative",
+        "llm_backend": "gemini",
         "skills": [FileSkill, DocSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill],
     },
     {
@@ -79,6 +93,8 @@ EXPERTS_CONFIG = [
         "background": "Dedicated to testing, bug detection, reliability engineering, and quality assurance.",
         "specialties": ["Unit Testing", "Integration Testing", "Playwright", "Pytest"],
         "avatar_color": "#88ff00",
+        "department": "Engineering & Logic",
+        "llm_backend": "deepseek",
         "skills": [FileSkill, CodeAnalysisSkill, ShellSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill],
     },
     {
@@ -87,6 +103,8 @@ EXPERTS_CONFIG = [
         "background": "Coordinates between agents, manages subagent lifecycles, and optimizes task delegation.",
         "specialties": ["Coordination", "Resource Management", "Scheduling", "Delegation"],
         "avatar_color": "#aa00ff",
+        "department": "Operations & Compliance",
+        "llm_backend": "openrouter",
         "skills": [FileSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill, RelationshipReasoningSkill],
     },
     {
@@ -95,6 +113,8 @@ EXPERTS_CONFIG = [
         "background": "Expert in documentation, technical writing, API docs, and clear communication.",
         "specialties": ["Markdown", "API Docs", "READMEs", "Tutorials"],
         "avatar_color": "#ffffff",
+        "department": "Product & Creative",
+        "llm_backend": "gemini",
         "skills": [FileSkill, DocSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill],
     },
     {
@@ -103,6 +123,8 @@ EXPERTS_CONFIG = [
         "background": "Specializes in MCP protocol, API bridging, webhooks, and tool interoperability.",
         "specialties": ["MCP", "REST APIs", "WebSockets", "Webhooks"],
         "avatar_color": "#ff6699",
+        "department": "Operations & Compliance",
+        "llm_backend": "openrouter",
         "skills": [FileSkill, WebSearchSkill, DocIngestionSkill, MCPToolSkill, FastEmbeddingSkill],
     },
     {
@@ -111,6 +133,8 @@ EXPERTS_CONFIG = [
         "background": "Expert in data processing, statistical analysis, insights generation, and visualization.",
         "specialties": ["Pandas", "NumPy", "Visualization", "ML Pipelines"],
         "avatar_color": "#00ff99",
+        "department": "Product & Creative",
+        "llm_backend": "gemini",
         "skills": [FileSkill, DataSkill, DocIngestionSkill, MCPToolSkill, WebSearchSkill, FastEmbeddingSkill],
     },
 ]
@@ -125,6 +149,8 @@ def get_expert_team() -> dict:
             background=cfg["background"],
             specialties=cfg["specialties"],
             avatar_color=cfg.get("avatar_color", "#00ff41"),
+            department=cfg.get("department", "General"),
+            llm_backend=cfg.get("llm_backend", "local")
         )
         skills = [SkillClass() for SkillClass in cfg.get("skills", [])]
         agent = BaseAgent(persona, skills=skills)

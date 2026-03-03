@@ -281,7 +281,11 @@ class ArtifactPipeline:
         """Read the content of an artifact file."""
         filepath = os.path.join(ARTIFACTS_DIR, filename)
         if os.path.exists(filepath):
-            with open(filepath, "r", encoding="utf-8") as f:
+            try:
+                with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+                    return f.read()
+            except Exception as e:
+                return f"[Error reading file: {e}]"
                 return f.read()
         return None
 

@@ -89,8 +89,8 @@ class RotaryEmbedding(nn.Module):
 
         # Different from paper, but it uses a different permutation in order to obtain the same calculation
         emb = torch.cat((freqs, freqs), dim=-1)
-        self.cos_cached = nn.Buffer(emb.cos(), persistent=False)
-        self.sin_cached = nn.Buffer(emb.sin(), persistent=False)
+        self.cos_cached = self.register_buffer('emb.cos()_buffer', emb.cos(), persistent=False)
+        self.sin_cached = self.register_buffer('emb.sin()_buffer', emb.sin(), persistent=False)
 
     def forward(self):
         return self.cos_cached, self.sin_cached
