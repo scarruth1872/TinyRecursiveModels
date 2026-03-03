@@ -406,9 +406,10 @@ async def test_artifact(req: TestRequest):
         test_filename = f"test_{req.filename}"
 
     test_task = (
-        f"write file {test_filename} with a comprehensive pytest test suite for this code. "
-        f"Output MUST be in '{test_filename}'. "
-        f"File: '{req.filename}':\n\n{content[:1500]}"
+        f"[ACTION] Create a comprehensive pytest test suite for this code.\\n"
+        f"You MUST output the test code using the following strict format:\\n"
+        f"WRITE_FILE: {test_filename}\\n```python\\n<your test code>\\n```\\n\\n"
+        f"File: '{req.filename}':\\n\\n{content[:1500]}"
     )
     
     test_response = await qa.process_task(test_task, sender="pipeline")
@@ -2188,9 +2189,10 @@ async def autonomous_pipeline_loop():
                     test_filename = f"test_{filename}" if not filename.startswith("test_") else filename
                     if test_filename != filename:
                         test_task = (
-                            f"write file {test_filename} with a comprehensive pytest test suite for this code. "
-                            f"Output MUST be in '{test_filename}'. "
-                            f"File: '{filename}':\n\n{content[:1500]}"
+                            f"[ACTION] Create a comprehensive pytest test suite for this code.\\n"
+                            f"You MUST output the test code using the following strict format:\\n"
+                            f"WRITE_FILE: {test_filename}\\n```python\\n<your test code>\\n```\\n\\n"
+                            f"File: '{filename}':\\n\\n{content[:1500]}"
                         )
                         await qa.process_task(test_task, sender="autonomous_pipeline")
                         
