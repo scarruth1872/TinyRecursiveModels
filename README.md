@@ -10,7 +10,7 @@ A production-ready, GPU-accelerated multi-agent operating system built on the **
 
 1. [Quick Start](#quick-start)
 2. [Architecture Overview](#architecture-overview)
-3. [Phase 11: Recursive Self-Optimization](#phase-11-recursive-self-optimization)
+3. [Phase 12: Multi-LLM Regional Managers](#phase-12-multi-llm-regional-managers)
 4. [The Soul of the Swarm](#the-soul-of-the-swarm)
 5. [Agent Registry](#agent-registry)
 6. [API Reference v2](#api-reference)
@@ -65,7 +65,7 @@ Or use the unified PowerShell script:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│                       SWARM OS v11                               │
+│                       SWARM OS v12                               │
 │                                                                  │
 │  ┌──────────┐   ┌──────────────────────────────────────────┐   │
 │  │  React   │   │           FastAPI Gateway (:8001)         │   │
@@ -75,94 +75,60 @@ Or use the unified PowerShell script:
 │                                  │                               │
 │        ┌─────────────────────────┼──────────────────────────┐   │
 │        │         Swarm Mesh (100% Parallel)                │   │
-│        │  ┌──────────────────────────────────────────────┐  │   │
-│        │  │              Distributed Cognitive Stacks    │  │   │
-│        │  │  [Agent 1]    [Agent 2]    ...    [Agent 12]  │  │   │
-│        │  │  ┌───────┐    ┌───────┐           ┌───────┐  │  │   │
-│        │  │  │ Gemma │    │ Gemma │           │ Gemma │  │  │   │
-│        │  │  ├───────┤    ├───────┤           ├───────┤  │  │   │
-│        │  │  │  TRM  │    │  TRM  │           │  TRM  │  │  │   │
-│        │  │  └───────┘    └───────┘           └───────┘  │  │   │
-│        │  └──────────────────────┬───────────────────────┘  │   │
-│        │                         │                           │   │
-│        │  ┌──────────────────────▼───────────────────────┐  │   │
-│        │  │              Shared Foundations              │  │   │
-│        │  │  ┌─────────────┐  ┌──────────────────────┐  │  │   │
-│        │  │  │ Proactive   │  │   Global Memory      │  │  │   │
-│        │  │  │ Loop        │  │   ChromaDB / Vectors  │  │  │   │
-│        │  │  └─────────────┘  └──────────────────────┘  │  │   │
-│        │  │  ┌─────────────┐  ┌──────────────────────┐  │  │   │
-│        │  │  │ Task        │  │   Sentinel Security  │  │  │   │
-│        │  │  │ Arbiter     │  │   Auto-Scan / Verify │  │  │   │
-│        │  │  └─────────────┘  └──────────────────────┘  │  │   │
-│        │  └───────────────────────────────────────────────┘  │   │
-│        └─────────────────────────────────────────────────────┘   │
+│        │                                                    │   │
+│        │   [ Product     ]   [ Operations  ]   [ Engineering ]  │
+│        │   [ & Creative  ]   [ & Compliance]   [ & Logic     ]  │
+│        │   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐  │
+│        │   │ Gemini Pro  │   │ Claude 3.5  │   │ DeepSeek    │  │
+│        │   │ (Google SDK)│   │ (OpenRouter)│   │ (Native API)│  │
+│        │   └──────┬──────┘   └──────┬──────┘   └──────┬──────┘  │
+│        │          │                 │                 │         │
+│        │     [4 Agents]        [4 Agents]        [4 Agents]     │
+│        │          │                 │                 │         │
+│        │   ┌──────┴──────┐   ┌──────┴──────┐   ┌──────┴──────┐  │
+│        │   │   TRM Core  │   │   TRM Core  │   │   TRM Core  │  │
+│        │   │ (36-Node    │   │ (36-Node    │   │ (36-Node    │  │
+│        │   │  Deep Logic)│   │  Deep Logic)│   │  Deep Logic)│  │
+│        │   └─────────────┘   └─────────────┘   └─────────────┘  │
+│        └────────────────────────────────────────────────────────┘   │
 │                                                                  │
 │  ┌────────────────────────────────────────────────────────────┐  │
-│  │              Local Neural Infrastructure                    │  │
-│  │    Total VRAM Footprint: ~2.4GB | 12 Parallel Agents        │  │
+│  │              Global Intelligence Foundations                │  │
+│  │   ChromaDB Vectors | P2P Agent Mailbox | Sentinel Scanner   │  │
 │  └────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Phase 11: Recursive Self-Optimization
+## Phase 12: Multi-LLM Regional Managers
 
-Swarm OS v11 migrates from heavy model-swapping to a lightweight, parallel intelligence mesh.
+Swarm OS v12 introduces the **Regional Manager Architecture**, a massive leap in cognitive diversity and operational throughput. Instead of relying on a single local model or API, the swarm is divided into three specialized departments, each governed by an industry-leading LLM backend.
 
-### TRM-Enhanced Sub-Agent Spawning System
+### 1. 🏢 Departmental Specialization
 
-Swarm OS v11 introduces **TRM-enhanced parallel reasoning** with sub-agent spawning capabilities:
+The 12 agents are distributed across three distinct cognitive regions:
 
-- **Parallel Sub-Agent Spawning**: TRM-enhanced agents can spawn parallel sub-agents for complex reasoning tasks
-- **Superposition State Management**: Multiple competing interpretations are maintained until consensus
-- **Resource-Aware Distribution**: Tasks automatically allocate across available CPU cores and GPU memory
-- **Performance Metrics**: 60-80% faster response times for complex tasks, 54% error reduction through superposition consensus
+- **Product & Creative:** Powered by **Google Gemini**. Specializes in multimodal design, drafting, research, and data visualization. (Agents: Vision, Pulse, Scribe, Seeker)
+- **Operations & Compliance:** Powered by **OpenRouter (Claude 3.5 Sonnet)**. Specializes in robust planning, security auditing, and system orchestration. (Agents: Shield, Flow, Orchestra, Bridge)
+- **Engineering & Logic:** Powered by **DeepSeek API**. Specializes in highly structured coding, QA verification, and complex algorithm design. (Agents: Devo, Archi, Logic, Verify)
 
-**Key Components**:
-1. **TRMEnhancedAgent** (`swarm_v2/core/trm_integration.py`) - BaseAgent with parallel reasoning
-2. **TRMOrchestrator** (`swarm_v2/core/trm_orchestrator.py`) - Manages recursive sub-agent spawning
-3. **Integration Points**: ExpertRegistry, CognitiveStack, TaskArbiter, BaseAgent compatibility
+### 2. 🧠 Deepened TRM Reasoning Core
 
-**Usage**:
-```python
-from swarm_v2.core.trm_integration import create_trm_enhanced_agent
-agent = create_trm_enhanced_agent(persona, skills)
-result = await agent.process_with_trm(complex_task)
-```
+The TRM (Tiny Recursive Model) reasoning core has been exponentially deepened.
 
-See [TRM_INTEGRATION_GUIDE.md](TRM_INTEGRATION_GUIDE.md) for complete integration details.
+- **Multi-Cycle Inference:** The TRM now dynamically loops inferences based on requested `H_cycles`, mapping metaphysical mathematics and logic architectures over 36 distinct logic nodes per cycle (up from the previous 12).
+- **Contextual Delegation:** When agents delegate tasks via `DELEGATE_TASK`, the system preserves the complete memory context of the overarching prompt, eliminating "orphaned" tasks where sub-agents lack crucial data.
+- **Dynamic Network Latency:** LLM backend generation timeouts have been increased (to 120s) to fully support DeepSeek and Gemini when mapping complex fields, such as Akashic vector mathematics or Logo equations.
 
-### 1. 🧠 Distributed Cognitive Stack
+### 3. ⚖️ Autonomous Thinker Loop
 
-Each agent operates its own hybrid stack:
+The Swarm operates as a closed-loop intelligence engine:
 
-- **Executive**: Gemma 3 270M for instruction following and orchestration.
-- **Reasoning**: Samsung TRM 7M for recursive logical audit and deep analysis.
-- **Offloading**: Complexity-aware routing automatically triggers TRM for difficult logic.
-
-### 2. ⚡ 4.5x Performance Leap
-
-Traditional LLM swarms suffer from VRAM contention. By using efficient, tiny weights:
-
-- **Sequential Latency**: Reduced from ~84s to **18.7s** for 12-agent chains.
-- **Parallel Stability**: All agents are resident in VRAM simultaneously.
-- **Zero Swap**: No more waiting for weights to shuttle between RAM and VRAM.
-
----
-
-Swarm OS v11 introduces autonomous agents capable of tuning their own cognitive depth.
-
-### 1. ⚖️ Dynamic Cognitive Tuning
-
-Agents monitor their own **latency** and **harmony scores**. If logical friction is detected, the `OptimizationEngine` automatically increases reasoning depth (`H_cycles`). If load is high, it throttles depth to maintain system throughput.
-
-### 2. 🌀 Resonance Thresholding
-
-The `ResonanceEngine` now uses semantic coherence thresholding (~0.4) to ensure "Shared Dreams" only manifest when collective thoughts reach critical mass, preventing compute noise.
-
----
+1. **Reconnaissance:** Agents ingest daily arXiv research and AI papers autonomously.
+2. **Orchestration:** Finding implications, they post proposals to the Kanban board.
+3. **Execution:** Regional Managers delegate coding tasks to build the found research.
+4. **Verification:** The Artifact Pipeline tests the code and autonomously merges it.
 
 ## The Soul of the Swarm
 
