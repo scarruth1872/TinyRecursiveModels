@@ -4,7 +4,7 @@ import asyncio
 import time
 from typing import Dict, Any, Optional, List, Tuple
 from collections import deque
-from swarm_v2.core.trm_brain import get_trm_brain
+# from swarm_v2.core.trm_brain import get_trm_brain
 
 logger = logging.getLogger("CognitiveStack")
 
@@ -25,7 +25,7 @@ class CognitiveStack:
         self.agent_name = agent_name
         self.executive_model = executive_model
         self.llm_backend = llm_backend
-        self.reasoning_core = get_trm_brain()
+        self.reasoning_core = None # get_trm_brain()
         self.stats = {
             "executive_calls": 0,
             "reasoning_calls": 0,

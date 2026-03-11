@@ -1,7 +1,7 @@
 
 import logging
 from typing import List, Dict, Any
-from swarm_v2.core.trm_brain import get_trm_brain
+# from swarm_v2.core.trm_brain import get_trm_brain
 from swarm_v2.core.resonance_engine import get_resonance_engine
 
 logger = logging.getLogger("RelationshipReasoning")
@@ -15,7 +15,7 @@ class RelationshipReasoningSkill:
     description = "Analyze agent interactions and philosophical alignment within the 'Shared Dream'."
 
     def __init__(self):
-        self.brain = get_trm_brain()
+        self.brain = None # get_trm_brain()
         self.resonance = get_resonance_engine()
         self.harmony_history = []
 

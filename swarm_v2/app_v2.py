@@ -2344,10 +2344,17 @@ async def send_mailbox_message(req: SendMailboxMessage):
         async def run_agent_process():
             try:
                 response = await agent.process_task(msg_payload, sender=req.from_agent)
+                
+                # Extract clean text if response is a dictionary 
+                if isinstance(response, dict):
+                    reply_text = response.get("response", str(response))
+                else:
+                    reply_text = str(response)
+                    
                 reply_mb = AgentMailbox(req.to_agent)
                 reply_mb.send(
                     req.from_agent, 
-                    str(response), 
+                    reply_text, 
                     subject=f"Re: {req.subject}"
                 )
             except Exception as e:
@@ -2391,7 +2398,9 @@ async def get_virtual_office_status():
     }
 
     for role, agent in engine_team.items():
-        is_working = role in working_agents
+        is_working_kanban = role in working_agents
+        is_working_mailbox = hasattr(agent, "active_task") and agent.active_task is not None
+        is_working = is_working_kanban or is_working_mailbox
         
         backend = getattr(agent.persona, "llm_backend", "local")
         department = getattr(agent.persona, "department", "General")
@@ -2401,13 +2410,20 @@ async def get_virtual_office_status():
             managers[backend]["active_agents"] += 1
             managers[backend]["status"] = "working"
 
+        if is_working_kanban:
+            task_title = working_agents[role].get("title", "")
+            task_desc = working_agents[role].get("description", "")
+        else:
+            task_title = "Direct Mailbox Task" if is_working_mailbox else None
+            task_desc = getattr(agent, "active_task", None) if is_working_mailbox else None
+
         status_list.append({
             "agent": role,
             "name": name,
             "role": role,
             "status": "working" if is_working else "idle",
-            "task": working_agents.get(role, {}).get("title", "") if is_working else None,
-            "description": working_agents.get(role, {}).get("description", "") if is_working else None,
+            "task": task_title,
+            "description": task_desc,
             "department": department,
             "llm_backend": backend
         })
@@ -2444,7 +2460,7 @@ if __name__ == "__main__":
         # QIAE Phase 5: Start the reconnaissance daemon (Seeker)
         start_reconnaissance(interval_hours=24)
         
-        config = uvicorn.Config(app, host="0.0.0.0", port=SWARM_PORT)
+        config = uvicorn.Config(app, host="0.0.0.0", port=8001, reload=False)
         server = uvicorn.Server(config)
         await server.serve()
         

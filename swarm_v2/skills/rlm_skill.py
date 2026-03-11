@@ -1,7 +1,7 @@
 
 import json
 from typing import List, Dict, Any, Optional
-from swarm_v2.core.trm_brain import get_trm_brain
+# from swarm_v2.core.trm_brain import get_trm_brain
 
 class RLMSkill:
     """
@@ -12,7 +12,7 @@ class RLMSkill:
     description = "Compresses and hydrates reasoning contexts for deep recursive intelligence."
 
     def __init__(self):
-        self.brain = get_trm_brain()
+        self.brain = None # get_trm_brain()
         self.latent_store: Dict[str, str] = {} # Token ID -> Full Summary
 
     async def compress_context(self, text: str, depth: int = 1) -> str:

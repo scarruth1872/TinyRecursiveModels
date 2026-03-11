@@ -73,6 +73,7 @@ class BaseAgent:
         
         # Extended Task Tracking
         self.task_history: List[Dict[str, Any]] = []
+        self.active_task: Optional[str] = None
         
         # Phase 5: QIAE Integration - Optional state-tracking
         self.qstate: Optional[Any] = None
@@ -742,6 +743,8 @@ class BaseAgent:
 
         # Reset logs and recursion depth for new external task
         sender_clean = str(sender).lower()
+        self.active_task = task[:100]
+        
         if sender_clean == "user" or sender_clean == "self": 
             self.nodal_logs = []
             self._recursion_depth = 0
@@ -899,6 +902,7 @@ class BaseAgent:
             result = fallback
             return fallback
         finally:
+            self.active_task = None
             # Notify arbiter of completion
             try:
                 from swarm_v2.core.task_arbiter import get_task_arbiter

@@ -1,6 +1,6 @@
 
 from typing import List, Optional
-from swarm_v2.core.trm_brain import get_trm_brain
+# from swarm_v2.core.trm_brain import get_trm_brain
 
 class TRMSkill:
     """Skill to access the Tiny Recursive Model for deep symbolic reasoning."""
@@ -8,7 +8,7 @@ class TRMSkill:
     description = "Use the 7M Tiny Recursive Model to perform deep, multi-cycle symbolic reasoning. Best for abstract pattern matching and logical puzzles."
 
     def __init__(self):
-        self.brain = get_trm_brain()
+        self.brain = None # get_trm_brain()
 
     def recursive_reason(self, pattern: str, cycles: int = 1) -> str:
         """
