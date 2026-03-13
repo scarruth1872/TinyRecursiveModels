@@ -3,7 +3,7 @@ import os
 import psutil
 from typing import Dict, Any, List
 from datetime import datetime
-# from swarm_v2.core.manus_engine import get_manus_engine
+from swarm_v2.core.manus_engine import get_manus_engine
 from swarm_v2.core.resource_arbiter import get_resource_arbiter
 from swarm_v2.core.coherence_thresholds import CoherenceThresholds
 from swarm_v2.core.proactive_loop import get_proactive_loop
@@ -17,7 +17,7 @@ class SwarmTelemetry:
     """
 
     def __init__(self):
-        self.manus = None # get_manus_engine()
+        self.manus = get_manus_engine()
         self.arbiter = get_resource_arbiter()
         self.proactive = get_proactive_loop()
         self.harmony_monitor = RelationshipReasoningSkill()

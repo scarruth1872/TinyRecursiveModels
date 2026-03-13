@@ -63,12 +63,12 @@ def start_tools():
         try:
             res = requests.get(f"http://localhost:{port}/health", timeout=3)
             if res.status_code == 200:
-                print(f"✅ {name} online on {port}")
+                print(f"[OK] {name} online on {port}")
                 success_count += 1
             else:
-                print(f"❌ {name} health check failed: {res.status_code}")
+                print(f"[FAIL] {name} health check failed: {res.status_code}")
         except Exception as e:
-            print(f"❌ {name} unreachable on {port}")
+            print(f"[FAIL] {name} unreachable on {port}: {e}")
 
     print(f"\nVerification Complete: {success_count}/{len(tools)} tools operational.")
 

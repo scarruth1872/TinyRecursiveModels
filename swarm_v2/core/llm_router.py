@@ -125,6 +125,7 @@ async def route_llm_request(backend: str, system_prompt: str, prompt: str, agent
     trace = None
     logger.info(f"Routing request for {agent_name} -> {backend}")
     
+    # Try the primary backend first
     try:
         if backend == "gemini":
             response = await generate_with_gemini(system_prompt, prompt)
@@ -139,8 +140,24 @@ async def route_llm_request(backend: str, system_prompt: str, prompt: str, agent
             
         logger.info(f"Received response from {backend} for {agent_name}")
         return response, trace
+        
     except Exception as e:
         import traceback
         err = traceback.format_exc()
-        print(f"[LLM Router] Critical Error with backend '{backend}': {err}")
+        print(f"[LLM Router] Error with backend '{backend}': {err}")
+        
+        # If external API failed, fallback to local Ollama
+        if backend in ["gemini", "openrouter", "deepseek"]:
+            print(f"[LLM Router] Falling back to local Ollama for {agent_name}")
+            logger.info(f"Falling back to local Ollama for {agent_name} due to {backend} failure")
+            try:
+                from swarm_v2.core.llm_brain import llm_chat
+                response = await llm_chat(system_prompt, prompt)
+                logger.info(f"Fallback to local Ollama successful for {agent_name}")
+                return response, trace
+            except Exception as fallback_error:
+                print(f"[LLM Router] Fallback to Ollama also failed: {fallback_error}")
+                logger.error(f"Fallback to Ollama failed for {agent_name}: {fallback_error}")
+                return f"[Error] Both {backend} and local Ollama failed. Please check system resources.", None
+        
         return f"[Error] Backend {backend} failed internally.", None

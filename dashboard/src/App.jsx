@@ -477,7 +477,7 @@ export default function App() {
                                     <Zap size={10} />
                                     <span>TRM Logic Trace</span>
                                   </div>
-                                  <div className="font-mono text-[10px] bg-black/40 p-2 rounded border border-white/5 text-accent-primary/80 overflow-x-auto no-scrollbar">
+                                  <div className="font-mono text-[10px] bg-background-primary/30 p-2 rounded border border-white/5 text-accent-primary/80 overflow-x-auto no-scrollbar">
                                     {msg.reasoning_trace}
                                   </div>
                                 </div>
@@ -708,7 +708,7 @@ export default function App() {
                     Monitoring: <span className="text-accent-primary">{orchestratorStats.active_tasks}</span> In-Flight / Registry: <span className="text-accent-primary">{artifacts.length}</span> Entities
                   </p>
                 </div>
-                <div className="pipeline-status-bar gap-6 bg-black/40 border border-white/5">
+                <div className="pipeline-status-bar gap-6 bg-background-primary/30 border border-white/5">
                   <div className="flex items-center gap-2">
                     <Activity size={10} className={orchestratorStats.active_tasks > 0 ? "text-accent-primary animate-pulse" : "text-text-secondary"} />
                     <span>ORCH_LOOP: <span className={orchestratorStats.status === 'online' ? "text-accent-success" : "text-accent-warning"}>{orchestratorStats.status?.toUpperCase()}</span></span>
@@ -831,7 +831,7 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="panel-body flex-1 bg-black/40 font-mono text-[11px] overflow-auto custom-scrollbar p-0">
+                      <div className="panel-body flex-1 bg-background-primary/30 font-mono text-[11px] overflow-auto custom-scrollbar p-0">
                         <div className="sticky top-0 right-0 p-2 z-10 flex justify-end">
                           <div className="px-2 py-1 bg-accent-primary/10 border border-accent-primary/20 text-[9px] text-accent-primary rounded">
                             LANGUAGE: {selectedArtifact.type?.toUpperCase() || 'UNKNOWN'}

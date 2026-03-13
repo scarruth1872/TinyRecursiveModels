@@ -3,6 +3,7 @@ import uuid
 import asyncio
 import psutil
 from datetime import datetime
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -55,7 +56,38 @@ def optimize_system():
 
 optimize_system()
 
-app = FastAPI(title="TRM Swarm V2 API", version="2.3.1")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handles application startup and shutdown events."""
+    print("[System] Lifespan startup...")
+    
+    # Verify Agent Mesh is ready
+    global agent_mesh
+    if agent_mesh:
+        topology = agent_mesh.get_topology()
+        print(f"[System] Agent Mesh ready with {len(topology.get('nodes', []))} nodes")
+    else:
+        print("[Warning] Agent Mesh not available!")
+    
+    # Start background tasks
+    asyncio.create_task(monitor_daemon.start())
+    asyncio.create_task(auto_scan_pipeline())
+    asyncio.create_task(mesh_heartbeat_reflex())
+    
+    # Start federation if enabled
+    if federation:
+        federation.start_heartbeat()
+        print("[Federation] P2P Heartbeat started.")
+        
+    print("[Swarm V2] Monitor Daemon, Shield Scanner, & Mesh Heartbeats started.")
+    
+    yield
+    
+    # Shutdown logic
+    print("[System] Lifespan shutdown...")
+    await monitor_daemon.stop()
+
+app = FastAPI(title="TRM Swarm V2 API", version="2.3.1", lifespan=lifespan)
 
 app.add_middleware(
     SentinelMiddleware,
@@ -87,7 +119,7 @@ print(f"[Pipeline] Stats: {stats}")
 
 # Phase 4: Self-Healing Architecture
 remediation_engine = RemediationEngine(engine_team)
-monitor_daemon = MonitorDaemon(remediation_engine, interval=15)
+# MonitorDaemon will be created after Agent Mesh is initialized
 
 # Phase 5: Mesh Federation
 SWARM_NODE_ID = os.getenv("SWARM_NODE_ID", "swarm_primary")
@@ -842,6 +874,9 @@ for role, agent in engine_team.items():
     )
     agent.mesh_node_id = node.node_id
 
+# Create MonitorDaemon after Agent Mesh is initialized
+monitor_daemon = MonitorDaemon(remediation_engine, interval=15, mesh=agent_mesh)
+
 @app.get("/swarm/expert/{role}/logs")
 async def expert_logs(role: str):
     agent = engine_team.get(role)
@@ -1136,21 +1171,7 @@ async def list_maintenance_tasks():
 
 # ─── Startup / Shutdown ──────────────────────────────────────────────────────
 
-@app.on_event("startup")
-async def startup_event():
-    # Start the self-healing monitor in the background
-    asyncio.create_task(monitor_daemon.start())
-    # Start the security scanner
-    asyncio.create_task(auto_scan_pipeline())
-    # Start the mesh heartbeat reflex for native agents
-    asyncio.create_task(mesh_heartbeat_reflex())
-    
-    # Phase 5: Start the federation heartbeat if enabled
-    if federation:
-        federation.start_heartbeat()
-        print("[Federation] P2P Heartbeat started.")
-        
-    print("[Swarm V2] Monitor Daemon, Shield Scanner, & Mesh Heartbeats started.")
+
 
 async def mesh_heartbeat_reflex():
     """Maintain the 'alive' status of all local experts on the mesh."""
@@ -1164,9 +1185,7 @@ async def mesh_heartbeat_reflex():
             print(f"[Mesh] Heartbeat error: {e}")
             await asyncio.sleep(30)
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    await monitor_daemon.stop()
+
 
 # ─── Shield Security Loop (Phase 4) ────────────────────────────────────────────
 

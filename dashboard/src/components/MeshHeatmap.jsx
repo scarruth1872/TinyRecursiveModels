@@ -295,7 +295,6 @@ const MeshHeatmap = () => {
           justify-content: space-between;
           align-items: center;
           padding: 12px 16px;
-          background: rgba(10, 10, 20, 0.8);
           border-left: 4px solid var(--lcars-cyan);
           border-radius: 4px;
         }

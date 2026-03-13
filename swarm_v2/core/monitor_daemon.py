@@ -39,9 +39,9 @@ logging.basicConfig(
 logger = logging.getLogger("MonitorDaemon")
 
 class MonitorDaemon:
-    def __init__(self, remediation_engine=None, interval: int = 10):
+    def __init__(self, remediation_engine=None, interval: int = 10, mesh=None):
         self.interval = interval
-        self.mesh = get_agent_mesh()
+        self.mesh = mesh  # Can be set directly or initialized later
         self.remediation_engine = remediation_engine
         self.running = False
         self.remediation_queue = []
@@ -49,17 +49,31 @@ class MonitorDaemon:
     async def start(self):
         """Start the monitoring loop."""
         self.running = True
+        logger.info("[Monitor] Monitor Daemon starting...")
+        
+        # Give the system a moment to initialize
+        await asyncio.sleep(2)
+        
+        # Use the mesh that was passed during initialization, or try to get it
+        if not self.mesh:
+            logger.info(f"[Debug] Monitor Daemon getting mesh reference...")
+            self.mesh = get_agent_mesh()
+        
+        if self.mesh:
+            logger.info("[Monitor] Agent Mesh initialized successfully.")
+            topology = self.mesh.get_topology()
+            logger.info(f"[Monitor] Mesh contains {len(topology.get('nodes', []))} nodes")
+        else:
+            logger.error("[Monitor] Agent Mesh could not be initialized - monitoring disabled!")
+        
         logger.info("[Monitor] Monitor Daemon started. Watching Agent Mesh...")
         
         while self.running:
             try:
-                if not self.mesh:
-                    self.mesh = get_agent_mesh()
-                
                 if self.mesh:
                     await self._check_mesh_health()
                 else:
-                    logger.warning("Agent Mesh not initialized yet.")
+                    logger.error("Agent Mesh not available - cannot monitor!")
                 
             except Exception as e:
                 logger.error(f"Error in monitor loop: {e}")

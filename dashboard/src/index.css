@@ -55,7 +55,7 @@
   --header-height: 3px;
 
   /* ── Glass Effects ───────────────────────────────────────────────────── */
-  --glass-bg: rgba(13, 18, 36, 0.7);
+  --glass-bg: rgba(20, 25, 40, 0.7);
   --glass-border: rgba(255, 255, 255, 0.06);
   --glass-blur: 20px;
 
@@ -256,6 +256,12 @@ main {
   border-radius: 12px;
   overflow: hidden;
   transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+@supports not (backdrop-filter: blur(20px)) {
+  .panel {
+    background: var(--bg-surface);
+  }
 }
 
 .panel:hover {
