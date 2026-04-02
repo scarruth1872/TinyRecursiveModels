@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import torch
@@ -19,17 +19,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve static dashboard files
-@app.get("/")
-async def read_root():
-    return FileResponse("index.html")
+# Serve static dashboard
+if os.path.exists("index.html"):
+    with open("index.html", "r") as f:
+        html_content = f.read()
 
-@app.get("/{path:path}")
-async def serve_static(path: str):
-    file_path = path
-    if os.path.exists(file_path) and os.path.isfile(file_path):
-        return FileResponse(file_path)
-    return FileResponse("index.html")
+    @app.get("/")
+    async def read_root():
+        return HTMLResponse(content=html_content)
 
 swarms = {}
 
@@ -97,6 +94,10 @@ async def solve_sudoku(task: SudokuTask):
 @app.get("/health")
 async def health():
     return {"status": "online"}
+
+# Mount static assets AFTER API routes
+if os.path.exists("assets"):
+    app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
 if __name__ == "__main__":
     import uvicorn
