@@ -2,4 +2,4 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "python app.py"
+startCommand = "uvicorn app:app --host 0.0.0.0 --port $PORT"
