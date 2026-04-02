@@ -1,5 +1,7 @@
-
+import os
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 import torch
@@ -9,7 +11,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="TRM Sudoku Swarm API")
 
-# Enable CORS for the dashboard
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,7 +19,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Store active swarms
+# Serve static dashboard files
+@app.get("/")
+async def read_root():
+    return FileResponse("index.html")
+
+@app.get("/{path:path}")
+async def serve_static(path: str):
+    file_path = path
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        return FileResponse(file_path)
+    return FileResponse("index.html")
+
 swarms = {}
 
 class SwarmConfig(BaseModel):
@@ -29,7 +41,7 @@ class SwarmConfig(BaseModel):
 
 class SudokuTask(BaseModel):
     swarm_id: str
-    grid: List[int] # 81 flat integers
+    grid: List[int]
     iterations: int = 5
 
 @app.post("/swarm/create")
