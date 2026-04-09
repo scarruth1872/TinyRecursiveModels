@@ -47,6 +47,10 @@ const EXPERT_PROMPTS = {
 const callLLM = async (role, message, history = []) => {
   const expert = EXPERT_PROMPTS[role] || EXPERT_PROMPTS.architect;
   
+  console.log('[v0] callLLM invoked for role:', role);
+  console.log('[v0] OPENROUTER_API_KEY present:', !!OPENROUTER_API_KEY, 'length:', OPENROUTER_API_KEY?.length);
+  console.log('[v0] DEEPSEEK_API_KEY present:', !!DEEPSEEK_API_KEY, 'length:', DEEPSEEK_API_KEY?.length);
+  
   // Build conversation history
   const messages = [
     { role: 'system', content: expert.system },
@@ -59,6 +63,7 @@ const callLLM = async (role, message, history = []) => {
 
   // Try OpenRouter first (works with multiple models)
   if (OPENROUTER_API_KEY) {
+    console.log('[v0] Attempting OpenRouter API call...');
     try {
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -76,21 +81,27 @@ const callLLM = async (role, message, history = []) => {
         })
       });
       
+      console.log('[v0] OpenRouter response status:', response.status);
       if (response.ok) {
         const data = await response.json();
+        console.log('[v0] OpenRouter success, response:', data.choices[0]?.message?.content?.slice(0, 50));
         return {
           response: data.choices[0]?.message?.content || 'No response generated',
           name: expert.name,
           reasoning_trace: `OPENROUTER > ${expert.name} > RESPONSE_GENERATED`
         };
+      } else {
+        const errData = await response.text();
+        console.warn('[v0] OpenRouter error response:', errData);
       }
     } catch (e) {
-      console.warn('OpenRouter API error:', e.message);
+      console.warn('[v0] OpenRouter API error:', e.message);
     }
   }
 
   // Fallback to DeepSeek direct API
   if (DEEPSEEK_API_KEY) {
+    console.log('[v0] Attempting DeepSeek API call...');
     try {
       const response = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
@@ -106,18 +117,25 @@ const callLLM = async (role, message, history = []) => {
         })
       });
       
+      console.log('[v0] DeepSeek response status:', response.status);
       if (response.ok) {
         const data = await response.json();
+        console.log('[v0] DeepSeek success');
         return {
           response: data.choices[0]?.message?.content || 'No response generated',
           name: expert.name,
           reasoning_trace: `DEEPSEEK > ${expert.name} > RESPONSE_GENERATED`
         };
+      } else {
+        const errData = await response.text();
+        console.warn('[v0] DeepSeek error response:', errData);
       }
     } catch (e) {
-      console.warn('DeepSeek API error:', e.message);
+      console.warn('[v0] DeepSeek API error:', e.message);
     }
   }
+  
+  console.log('[v0] Falling back to demo mode');
 
   // Demo mode response if no API keys
   return {
