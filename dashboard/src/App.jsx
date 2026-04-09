@@ -297,30 +297,19 @@ export default function App() {
     if (!inputMsg.trim() || !selectedRole || isProcessing) return;
     const role = selectedRole;
     const userMsg = inputMsg;
+    const currentHistory = messages[role] || [];
     setMessages(prev => ({ ...prev, [role]: [...(prev[role] || []), { text: userMsg, sender: 'user', time: new Date().toLocaleTimeString() }] }));
     setInputMsg('');
     setIsProcessing(true);
     
-    // In demo mode, simulate a response
-    if (isDemoMode) {
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing
-      const expert = experts.find(e => e.role === role);
-      setMessages(prev => ({
-        ...prev,
-        [role]: [...(prev[role] || []), {
-          text: `[DEMO MODE] ${expert?.name || 'Agent'} acknowledges your input: "${userMsg}". In production, this would connect to the TRM neural backend for real-time cognitive processing.`,
-          sender: 'agent',
-          name: expert?.name || 'AGENT',
-          reasoning_trace: 'DEMO_MODE > SIMULATION > RESPONSE_GENERATED',
-          time: new Date().toLocaleTimeString()
-        }]
-      }));
-      setIsProcessing(false);
-      return;
-    }
-    
     try {
-      const res = await axios.post(`${API_BASE}/swarm/chat`, { role, message: userMsg, sender: 'user' });
+      // Try the new LLM API endpoint first (OpenRouter/DeepSeek)
+      const res = await axios.post('/api/chat', { 
+        role, 
+        message: userMsg, 
+        history: currentHistory.slice(-6) // Send last 6 messages for context
+      }, { timeout: 30000 });
+      
       setMessages(prev => ({
         ...prev,
         [role]: [...(prev[role] || []), {
@@ -331,9 +320,32 @@ export default function App() {
           time: new Date().toLocaleTimeString()
         }]
       }));
-    } catch (err) {
-      console.error('Chat Error:', err);
-      setMessages(prev => ({ ...prev, [role]: [...(prev[role] || []), { text: '[NEURAL_LINK_STALLED] - Backend connection unavailable', sender: 'system' }] }));
+    } catch (llmErr) {
+      // Fallback to original backend if LLM API fails
+      try {
+        const res = await axios.post(`${API_BASE}/swarm/chat`, { role, message: userMsg, sender: 'user' });
+        setMessages(prev => ({
+          ...prev,
+          [role]: [...(prev[role] || []), {
+            text: res.data.response,
+            sender: 'agent',
+            name: res.data.name,
+            reasoning_trace: res.data.reasoning_trace,
+            time: new Date().toLocaleTimeString()
+          }]
+        }));
+      } catch (backendErr) {
+        console.error('Chat Error:', llmErr.message || backendErr.message);
+        const errorMsg = llmErr.response?.data?.error || llmErr.message || 'Connection unavailable';
+        setMessages(prev => ({ 
+          ...prev, 
+          [role]: [...(prev[role] || []), { 
+            text: `[NEURAL_LINK_ERROR] ${errorMsg}`, 
+            sender: 'system',
+            time: new Date().toLocaleTimeString()
+          }] 
+        }));
+      }
     } finally { setIsProcessing(false); }
   };
 
@@ -373,7 +385,7 @@ export default function App() {
         {isDemoMode && (
           <div className="demo-mode-banner">
             <AlertTriangle size={14} />
-            <span>DEMO MODE - Backend API unavailable. Displaying simulated data.</span>
+            <span>DEMO MODE - Backend API unavailable. Chat uses OpenRouter/DeepSeek LLMs. Telemetry shows simulated data.</span>
           </div>
         )}
         <AnimatePresence mode="wait">
