@@ -1,8 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const API_BASE = 'http://localhost:8001';
 import {
   Terminal, Cpu, Activity, RefreshCw, MessageSquare, Users, Send,
   Shield, Zap, ChevronRight, Lock, Boxes, GitBranch, Play, X, Plus,
@@ -15,6 +12,40 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import MeshHeatmap from './components/MeshHeatmap';
+
+const API_BASE = 'http://localhost:8001';
+
+// Mock data for when API is unavailable (demo mode)
+const MOCK_DATA = {
+  experts: [
+    { role: 'architect', name: 'ARCHI', avatar_color: '#ff9900' },
+    { role: 'developer', name: 'DEVO', avatar_color: '#33ccff' },
+    { role: 'analyst', name: 'ANALYST', avatar_color: '#cc99cc' },
+    { role: 'security', name: 'SENTINEL', avatar_color: '#66cc66' },
+    { role: 'researcher', name: 'SCRIBE', avatar_color: '#ffcc00' },
+  ],
+  telemetry: {
+    status: 'Demo Mode',
+    mesh_coherence: 0.92,
+    harmony_index: 0.87,
+    active_proposals: 3,
+    system: { cpu_percent: 45.2, memory_percent: 62.8 },
+    resource_arbiter: { total_gb: 24, allocated_gb: 14.5, available_gb: 9.5 },
+    distributed_stacks: {
+      cognitive: { status: 'Healthy', load: 45, agents: 3 },
+      memory: { status: 'Healthy', load: 32, agents: 2 },
+      inference: { status: 'Healthy', load: 58, agents: 4 },
+    },
+    superpositions: [
+      { protocol: 'CONSENSUS', agents: ['ARCHI', 'DEVO'], state: 'Active' },
+      { protocol: 'SYNTHESIS', agents: ['SCRIBE', 'ANALYST'], state: 'Pending' },
+    ],
+  },
+  artifacts: [],
+  mesh: { nodes: [], connections: [], alive: 0 },
+  skills: { skills: [] },
+  memory: { total_memories: 0, sync_events: 0, by_type: {} },
+};
 
 // ─── Component: LCARS Sidebar ───────────────────────────────────────────
 const Sidebar = ({ activeTab, onTabChange, stats }) => {
@@ -111,6 +142,9 @@ export default function App() {
 
   const chatEndRef = useRef(null);
 
+  // State to track if we're in demo mode (API unavailable)
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
   // Sync Logic
   useEffect(() => {
     const fetchData = async () => {
@@ -125,9 +159,13 @@ export default function App() {
           { key: 'telemetry', url: '/swarm/telemetry' },
         ];
 
-        const dataPromises = endpoints.map(e => fetch(`${API_BASE}${e.url}`).then(res => res.json()));
+        const dataPromises = endpoints.map(e => 
+          fetch(`${API_BASE}${e.url}`, { signal: AbortSignal.timeout(3000) })
+            .then(res => res.json())
+        );
         const [expertsData, artifactsData, resourcesData, meshData, skillsData, memData, telemetryData] = await Promise.all(dataPromises);
 
+        setIsDemoMode(false);
         setExperts(expertsData);
         if (expertsData.length > 0 && !selectedRole) setSelectedRole(expertsData[0].role);
 
@@ -142,7 +180,18 @@ export default function App() {
         setMemStats(memData);
         setOverview(telemetryData);
 
-      } catch (err) { console.error("Sync Error", err); }
+      } catch (err) {
+        // API unavailable - switch to demo mode with mock data
+        console.warn("API unavailable, switching to demo mode:", err.message);
+        setIsDemoMode(true);
+        setExperts(MOCK_DATA.experts);
+        if (MOCK_DATA.experts.length > 0 && !selectedRole) setSelectedRole(MOCK_DATA.experts[0].role);
+        setArtifacts(MOCK_DATA.artifacts);
+        setMeshTopology(MOCK_DATA.mesh);
+        setLearnedSkills(MOCK_DATA.skills.skills);
+        setMemStats(MOCK_DATA.memory);
+        setOverview(MOCK_DATA.telemetry);
+      }
     };
 
     const fetchTabData = async (tab) => {
@@ -247,13 +296,31 @@ export default function App() {
   const sendMessage = async () => {
     if (!inputMsg.trim() || !selectedRole || isProcessing) return;
     const role = selectedRole;
-    setMessages(prev => ({ ...prev, [role]: [...(prev[role] || []), { text: inputMsg, sender: 'user', time: new Date().toLocaleTimeString() }] }));
+    const userMsg = inputMsg;
+    setMessages(prev => ({ ...prev, [role]: [...(prev[role] || []), { text: userMsg, sender: 'user', time: new Date().toLocaleTimeString() }] }));
     setInputMsg('');
     setIsProcessing(true);
+    
+    // In demo mode, simulate a response
+    if (isDemoMode) {
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate processing
+      const expert = experts.find(e => e.role === role);
+      setMessages(prev => ({
+        ...prev,
+        [role]: [...(prev[role] || []), {
+          text: `[DEMO MODE] ${expert?.name || 'Agent'} acknowledges your input: "${userMsg}". In production, this would connect to the TRM neural backend for real-time cognitive processing.`,
+          sender: 'agent',
+          name: expert?.name || 'AGENT',
+          reasoning_trace: 'DEMO_MODE > SIMULATION > RESPONSE_GENERATED',
+          time: new Date().toLocaleTimeString()
+        }]
+      }));
+      setIsProcessing(false);
+      return;
+    }
+    
     try {
-      console.log('Sending message:', { role, message: inputMsg, sender: 'user' });
-      const res = await axios.post(`${API_BASE}/swarm/chat`, { role, message: inputMsg, sender: 'user' });
-      console.log('Received response:', res.data);
+      const res = await axios.post(`${API_BASE}/swarm/chat`, { role, message: userMsg, sender: 'user' });
       setMessages(prev => ({
         ...prev,
         [role]: [...(prev[role] || []), {
@@ -266,7 +333,7 @@ export default function App() {
       }));
     } catch (err) {
       console.error('Chat Error:', err);
-      setMessages(prev => ({ ...prev, [role]: [...(prev[role] || []), { text: '⚠️ [NEURAL_LINK_STALLED]', sender: 'system' }] }));
+      setMessages(prev => ({ ...prev, [role]: [...(prev[role] || []), { text: '[NEURAL_LINK_STALLED] - Backend connection unavailable', sender: 'system' }] }));
     } finally { setIsProcessing(false); }
   };
 
@@ -302,6 +369,13 @@ export default function App() {
     <div className="container">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} stats={{ resources, artifacts, memoryStats }} />
       <main className="main-content">
+        {/* Demo Mode Banner */}
+        {isDemoMode && (
+          <div className="demo-mode-banner">
+            <AlertTriangle size={14} />
+            <span>DEMO MODE - Backend API unavailable. Displaying simulated data.</span>
+          </div>
+        )}
         <AnimatePresence mode="wait">
 
           {/* 01 SYSTEM STATUS */}
