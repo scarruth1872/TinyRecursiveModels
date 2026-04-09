@@ -15,6 +15,118 @@ import MeshHeatmap from './components/MeshHeatmap';
 
 const API_BASE = 'http://localhost:8001';
 
+// LLM API Configuration - Uses OpenRouter with DeepSeek model
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '';
+const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY || '';
+
+// Expert system prompts for each role
+const EXPERT_PROMPTS = {
+  architect: {
+    name: 'ARCHI',
+    system: `You are ARCHI, the Chief Architect of the TinyRecursiveModels swarm intelligence system. You specialize in system design, architecture patterns, and high-level technical strategy. You speak in a precise, technical manner with occasional LCARS-style status codes. Keep responses focused and under 200 words.`
+  },
+  developer: {
+    name: 'DEVO',
+    system: `You are DEVO, the Lead Developer of the TinyRecursiveModels system. You specialize in implementation, code optimization, and debugging. You're practical, code-focused, and speak with technical precision. Include code snippets when relevant. Keep responses under 200 words.`
+  },
+  analyst: {
+    name: 'ANALYST',
+    system: `You are ANALYST, the Data Intelligence Officer of TinyRecursiveModels. You specialize in pattern recognition, data analysis, and insights extraction. You present findings in structured formats with metrics. Keep responses analytical and under 200 words.`
+  },
+  security: {
+    name: 'SENTINEL',
+    system: `You are SENTINEL, the Security Chief of TinyRecursiveModels. You specialize in threat detection, access control, and system hardening. You're vigilant and speak with authority about security matters. Keep responses security-focused and under 200 words.`
+  },
+  researcher: {
+    name: 'SCRIBE',
+    system: `You are SCRIBE, the Research Archivist of TinyRecursiveModels. You specialize in documentation, knowledge synthesis, and learning optimization. You're thorough and articulate. Keep responses informative and under 200 words.`
+  }
+};
+
+// Call LLM API directly (OpenRouter or DeepSeek)
+const callLLM = async (role, message, history = []) => {
+  const expert = EXPERT_PROMPTS[role] || EXPERT_PROMPTS.architect;
+  
+  // Build conversation history
+  const messages = [
+    { role: 'system', content: expert.system },
+    ...history.slice(-6).map(msg => ({
+      role: msg.sender === 'user' ? 'user' : 'assistant',
+      content: msg.text
+    })),
+    { role: 'user', content: message }
+  ];
+
+  // Try OpenRouter first (works with multiple models)
+  if (OPENROUTER_API_KEY) {
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'TinyRecursiveModels Dashboard'
+        },
+        body: JSON.stringify({
+          model: 'deepseek/deepseek-chat',
+          messages,
+          max_tokens: 500,
+          temperature: 0.7
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          response: data.choices[0]?.message?.content || 'No response generated',
+          name: expert.name,
+          reasoning_trace: `OPENROUTER > ${expert.name} > RESPONSE_GENERATED`
+        };
+      }
+    } catch (e) {
+      console.warn('OpenRouter API error:', e.message);
+    }
+  }
+
+  // Fallback to DeepSeek direct API
+  if (DEEPSEEK_API_KEY) {
+    try {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages,
+          max_tokens: 500,
+          temperature: 0.7
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          response: data.choices[0]?.message?.content || 'No response generated',
+          name: expert.name,
+          reasoning_trace: `DEEPSEEK > ${expert.name} > RESPONSE_GENERATED`
+        };
+      }
+    } catch (e) {
+      console.warn('DeepSeek API error:', e.message);
+    }
+  }
+
+  // Demo mode response if no API keys
+  return {
+    response: `[${expert.name}] I acknowledge your query: "${message.slice(0, 50)}...". Neural link operating in demo mode - configure VITE_OPENROUTER_API_KEY or VITE_DEEPSEEK_API_KEY for full functionality.`,
+    name: expert.name,
+    reasoning_trace: 'DEMO_MODE > LOCAL_RESPONSE'
+  };
+};
+
 // Mock data for when API is unavailable (demo mode)
 const MOCK_DATA = {
   experts: [
@@ -303,49 +415,29 @@ export default function App() {
     setIsProcessing(true);
     
     try {
-      // Try the new LLM API endpoint first (OpenRouter/DeepSeek)
-      const res = await axios.post('/api/chat', { 
-        role, 
-        message: userMsg, 
-        history: currentHistory.slice(-6) // Send last 6 messages for context
-      }, { timeout: 30000 });
+      // Call LLM directly (OpenRouter/DeepSeek)
+      const llmResponse = await callLLM(role, userMsg, currentHistory);
       
       setMessages(prev => ({
         ...prev,
         [role]: [...(prev[role] || []), {
-          text: res.data.response,
+          text: llmResponse.response,
           sender: 'agent',
-          name: res.data.name,
-          reasoning_trace: res.data.reasoning_trace,
+          name: llmResponse.name,
+          reasoning_trace: llmResponse.reasoning_trace,
           time: new Date().toLocaleTimeString()
         }]
       }));
-    } catch (llmErr) {
-      // Fallback to original backend if LLM API fails
-      try {
-        const res = await axios.post(`${API_BASE}/swarm/chat`, { role, message: userMsg, sender: 'user' });
-        setMessages(prev => ({
-          ...prev,
-          [role]: [...(prev[role] || []), {
-            text: res.data.response,
-            sender: 'agent',
-            name: res.data.name,
-            reasoning_trace: res.data.reasoning_trace,
-            time: new Date().toLocaleTimeString()
-          }]
-        }));
-      } catch (backendErr) {
-        console.error('Chat Error:', llmErr.message || backendErr.message);
-        const errorMsg = llmErr.response?.data?.error || llmErr.message || 'Connection unavailable';
-        setMessages(prev => ({ 
-          ...prev, 
-          [role]: [...(prev[role] || []), { 
-            text: `[NEURAL_LINK_ERROR] ${errorMsg}`, 
-            sender: 'system',
-            time: new Date().toLocaleTimeString()
-          }] 
-        }));
-      }
+    } catch (err) {
+      console.error('Chat Error:', err.message);
+      setMessages(prev => ({ 
+        ...prev, 
+        [role]: [...(prev[role] || []), { 
+          text: `[NEURAL_LINK_ERROR] ${err.message || 'Connection unavailable'}`, 
+          sender: 'system',
+          time: new Date().toLocaleTimeString()
+        }] 
+      }));
     } finally { setIsProcessing(false); }
   };
 
