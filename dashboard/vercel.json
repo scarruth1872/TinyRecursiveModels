@@ -1,10 +1,17 @@
 {
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/api/swarm/experts", "destination": "/api/swarm/experts.js" },
+    { "source": "/api/swarm/telemetry", "destination": "/api/swarm/telemetry.js" },
+    { "source": "/api/swarm/chat", "destination": "/api/chat.js" },
+    { "source": "/api/mesh/topology", "destination": "/api/mesh/topology.js" },
+    { "source": "/api/artifacts", "destination": "/api/artifacts.js" },
+    { "source": "/api/system/resources", "destination": "/api/system/resources.js" },
+    { "source": "/api/learning/skills", "destination": "/api/learning/skills.js" },
+    { "source": "/api/memory/stats", "destination": "/api/memory/stats.js" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {
-    "api/*.js": {
+    "api/**/*.js": {
       "runtime": "@vercel/node@3"
     }
   }
