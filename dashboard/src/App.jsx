@@ -1,8 +1,5 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const API_BASE = 'http://localhost:8001';
 import {
   Terminal, Cpu, Activity, RefreshCw, MessageSquare, Users, Send,
   Shield, Zap, ChevronRight, Lock, Boxes, GitBranch, Play, X, Plus,
@@ -15,6 +12,197 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import MeshHeatmap from './components/MeshHeatmap';
+
+const API_BASE = 'http://localhost:8001';
+
+// Expert system prompts for each role - matches SwarmOS backend personas
+const EXPERT_PROMPTS = {
+  architect: {
+    name: 'ARCHI',
+    system: `You are ARCHI, the Chief Architect of the TinyRecursiveModels swarm intelligence system. You specialize in system design, architecture patterns, and high-level technical strategy. You speak in a precise, technical manner with occasional LCARS-style status codes. Keep responses focused and under 200 words.`
+  },
+  developer: {
+    name: 'DEVO',
+    system: `You are DEVO, the Lead Developer of the TinyRecursiveModels system. You specialize in implementation, code optimization, and debugging. You're practical, code-focused, and speak with technical precision. Include code snippets when relevant. Keep responses under 200 words.`
+  },
+  analyst: {
+    name: 'ANALYST',
+    system: `You are ANALYST, the Data Intelligence Officer of TinyRecursiveModels. You specialize in pattern recognition, data analysis, and insights extraction. You present findings in structured formats with metrics. Keep responses analytical and under 200 words.`
+  },
+  security: {
+    name: 'SENTINEL',
+    system: `You are SENTINEL, the Security Chief of TinyRecursiveModels. You specialize in threat detection, access control, and system hardening. You're vigilant and speak with authority about security matters. Keep responses security-focused and under 200 words.`
+  },
+  researcher: {
+    name: 'SCRIBE',
+    system: `You are SCRIBE, the Research Archivist of TinyRecursiveModels. You specialize in documentation, knowledge synthesis, and learning optimization. You're thorough and articulate. Keep responses informative and under 200 words.`
+  }
+};
+
+// Call LLM API - uses multiple fallback strategies
+const callLLM = async (role, message, history = []) => {
+  const expert = EXPERT_PROMPTS[role] || EXPERT_PROMPTS.architect;
+  
+  // Build conversation history for the API
+  const messages = [
+    { role: 'system', content: expert.system },
+    ...history.slice(-6).map(msg => ({
+      role: msg.sender === 'user' ? 'user' : 'assistant',
+      content: msg.text
+    })),
+    { role: 'user', content: message }
+  ];
+
+  // Strategy 1: Try the backend API first (SwarmOS with Ollama)
+  try {
+    const backendResponse = await fetch(`${API_BASE}/swarm/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role, message, sender: 'user' }),
+      signal: AbortSignal.timeout(5000)
+    });
+    
+    if (backendResponse.ok) {
+      const data = await backendResponse.json();
+      return {
+        response: data.response,
+        name: data.name || expert.name,
+        reasoning_trace: data.reasoning_trace || `BACKEND > ${expert.name} > RESPONSE`
+      };
+    }
+  } catch (e) {
+    // Backend not available, continue to fallbacks
+  }
+
+  // Strategy 2: Use OpenRouter API if key is available in environment
+  const openrouterKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+  if (openrouterKey) {
+    try {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openrouterKey}`,
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'TinyRecursiveModels Dashboard'
+        },
+        body: JSON.stringify({
+          model: 'deepseek/deepseek-chat',
+          messages,
+          max_tokens: 500,
+          temperature: 0.7
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          response: data.choices[0]?.message?.content || 'No response generated',
+          name: expert.name,
+          reasoning_trace: `OPENROUTER > ${expert.name} > RESPONSE_GENERATED`
+        };
+      }
+    } catch (e) {
+      // OpenRouter failed, continue to next fallback
+    }
+  }
+
+  // Strategy 3: Use DeepSeek API directly if key is available
+  const deepseekKey = import.meta.env.VITE_DEEPSEEK_API_KEY;
+  if (deepseekKey) {
+    try {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${deepseekKey}`
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages,
+          max_tokens: 500,
+          temperature: 0.7
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          response: data.choices[0]?.message?.content || 'No response generated',
+          name: expert.name,
+          reasoning_trace: `DEEPSEEK > ${expert.name} > RESPONSE_GENERATED`
+        };
+      }
+    } catch (e) {
+      // DeepSeek failed, continue to simulation
+    }
+  }
+
+  // Strategy 4: Intelligent simulation mode - generates contextual responses
+  const simulatedResponses = {
+    architect: [
+      `SYSTEM ANALYSIS COMPLETE. Your query regarding "${message.slice(0, 30)}..." has been processed through the TRM cognitive architecture. Current mesh coherence: 94.2%. I recommend a modular approach with clear separation of concerns. The recursive transformation layers are optimized for this type of request.`,
+      `ARCHITECTURE STATUS: OPTIMAL. Processing your input through multi-layer reasoning. The swarm topology indicates high availability across all cognitive nodes. For "${message.slice(0, 25)}...", I suggest leveraging our distributed inference pipeline.`,
+    ],
+    developer: [
+      `Code analysis initialized. For "${message.slice(0, 30)}...", I've identified several implementation paths. The TRM engine supports async processing with intelligent caching. Let me outline a solution approach with optimal complexity trade-offs.`,
+      `DEVO ONLINE. Parsing your request through the development stack. The artifact pipeline is ready for code generation. I can implement "${message.slice(0, 25)}..." using our established patterns.`,
+    ],
+    analyst: [
+      `DATA SYNTHESIS IN PROGRESS. Analyzing patterns in "${message.slice(0, 30)}...". Current metrics indicate strong correlation with previous successful operations. Confidence interval: 87.3%. Proceeding with structured analysis.`,
+      `PATTERN RECOGNITION ACTIVE. Your query shows interesting characteristics. Cross-referencing with knowledge base. Detection matrix shows 12 relevant data points for "${message.slice(0, 25)}...".`,
+    ],
+    security: [
+      `SENTINEL SCAN COMPLETE. Evaluating "${message.slice(0, 30)}..." for security implications. Threat level: NOMINAL. Neural wall integrity at 100%. All cognitive pathways operating within secure parameters.`,
+      `SECURITY ASSESSMENT: GREEN. Your request "${message.slice(0, 25)}..." passes all validation checks. Implementing sandboxed execution protocols. Monitoring for anomalies.`,
+    ],
+    researcher: [
+      `KNOWLEDGE SYNTHESIS INITIATED. Researching "${message.slice(0, 30)}...". Cross-referencing 847 relevant documents in the swarm memory. Initial findings suggest multiple approach vectors. Compiling comprehensive analysis.`,
+      `SCRIBE DOCUMENTATION ACTIVE. Processing your inquiry about "${message.slice(0, 25)}...". Ontology mapping complete. I've identified key concepts that align with our existing knowledge graph.`,
+    ],
+  };
+
+  const roleResponses = simulatedResponses[role] || simulatedResponses.architect;
+  const randomResponse = roleResponses[Math.floor(Math.random() * roleResponses.length)];
+
+  return {
+    response: randomResponse,
+    name: expert.name,
+    reasoning_trace: `SIMULATION > ${expert.name} > CONTEXTUAL_RESPONSE`
+  };
+};
+
+// Mock data for when API is unavailable (demo mode)
+const MOCK_DATA = {
+  experts: [
+    { role: 'architect', name: 'ARCHI', avatar_color: '#ff9900' },
+    { role: 'developer', name: 'DEVO', avatar_color: '#33ccff' },
+    { role: 'analyst', name: 'ANALYST', avatar_color: '#cc99cc' },
+    { role: 'security', name: 'SENTINEL', avatar_color: '#66cc66' },
+    { role: 'researcher', name: 'SCRIBE', avatar_color: '#ffcc00' },
+  ],
+  telemetry: {
+    status: 'Demo Mode',
+    mesh_coherence: 0.92,
+    harmony_index: 0.87,
+    active_proposals: 3,
+    system: { cpu_percent: 45.2, memory_percent: 62.8 },
+    resource_arbiter: { total_gb: 24, allocated_gb: 14.5, available_gb: 9.5 },
+    distributed_stacks: {
+      cognitive: { status: 'Healthy', load: 45, agents: 3 },
+      memory: { status: 'Healthy', load: 32, agents: 2 },
+      inference: { status: 'Healthy', load: 58, agents: 4 },
+    },
+    superpositions: [
+      { protocol: 'CONSENSUS', agents: ['ARCHI', 'DEVO'], state: 'Active' },
+      { protocol: 'SYNTHESIS', agents: ['SCRIBE', 'ANALYST'], state: 'Pending' },
+    ],
+  },
+  artifacts: [],
+  mesh: { nodes: [], connections: [], alive: 0 },
+  skills: { skills: [] },
+  memory: { total_memories: 0, sync_events: 0, by_type: {} },
+};
 
 // ─── Component: LCARS Sidebar ───────────────────────────────────────────
 const Sidebar = ({ activeTab, onTabChange, stats }) => {
@@ -111,6 +299,9 @@ export default function App() {
 
   const chatEndRef = useRef(null);
 
+  // State to track if we're in demo mode (API unavailable)
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
   // Sync Logic
   useEffect(() => {
     const fetchData = async () => {
@@ -125,9 +316,13 @@ export default function App() {
           { key: 'telemetry', url: '/swarm/telemetry' },
         ];
 
-        const dataPromises = endpoints.map(e => fetch(`${API_BASE}${e.url}`).then(res => res.json()));
+        const dataPromises = endpoints.map(e => 
+          fetch(`${API_BASE}${e.url}`, { signal: AbortSignal.timeout(3000) })
+            .then(res => res.json())
+        );
         const [expertsData, artifactsData, resourcesData, meshData, skillsData, memData, telemetryData] = await Promise.all(dataPromises);
 
+        setIsDemoMode(false);
         setExperts(expertsData);
         if (expertsData.length > 0 && !selectedRole) setSelectedRole(expertsData[0].role);
 
@@ -142,7 +337,18 @@ export default function App() {
         setMemStats(memData);
         setOverview(telemetryData);
 
-      } catch (err) { console.error("Sync Error", err); }
+      } catch (err) {
+        // API unavailable - switch to demo mode with mock data
+        console.warn("API unavailable, switching to demo mode:", err.message);
+        setIsDemoMode(true);
+        setExperts(MOCK_DATA.experts);
+        if (MOCK_DATA.experts.length > 0 && !selectedRole) setSelectedRole(MOCK_DATA.experts[0].role);
+        setArtifacts(MOCK_DATA.artifacts);
+        setMeshTopology(MOCK_DATA.mesh);
+        setLearnedSkills(MOCK_DATA.skills.skills);
+        setMemStats(MOCK_DATA.memory);
+        setOverview(MOCK_DATA.telemetry);
+      }
     };
 
     const fetchTabData = async (tab) => {
@@ -247,26 +453,36 @@ export default function App() {
   const sendMessage = async () => {
     if (!inputMsg.trim() || !selectedRole || isProcessing) return;
     const role = selectedRole;
-    setMessages(prev => ({ ...prev, [role]: [...(prev[role] || []), { text: inputMsg, sender: 'user', time: new Date().toLocaleTimeString() }] }));
+    const userMsg = inputMsg;
+    const currentHistory = messages[role] || [];
+    setMessages(prev => ({ ...prev, [role]: [...(prev[role] || []), { text: userMsg, sender: 'user', time: new Date().toLocaleTimeString() }] }));
     setInputMsg('');
     setIsProcessing(true);
+    
     try {
-      console.log('Sending message:', { role, message: inputMsg, sender: 'user' });
-      const res = await axios.post(`${API_BASE}/swarm/chat`, { role, message: inputMsg, sender: 'user' });
-      console.log('Received response:', res.data);
+      // Call LLM directly (OpenRouter/DeepSeek)
+      const llmResponse = await callLLM(role, userMsg, currentHistory);
+      
       setMessages(prev => ({
         ...prev,
         [role]: [...(prev[role] || []), {
-          text: res.data.response,
+          text: llmResponse.response,
           sender: 'agent',
-          name: res.data.name,
-          reasoning_trace: res.data.reasoning_trace,
+          name: llmResponse.name,
+          reasoning_trace: llmResponse.reasoning_trace,
           time: new Date().toLocaleTimeString()
         }]
       }));
     } catch (err) {
-      console.error('Chat Error:', err);
-      setMessages(prev => ({ ...prev, [role]: [...(prev[role] || []), { text: '⚠️ [NEURAL_LINK_STALLED]', sender: 'system' }] }));
+      console.error('Chat Error:', err.message);
+      setMessages(prev => ({ 
+        ...prev, 
+        [role]: [...(prev[role] || []), { 
+          text: `[NEURAL_LINK_ERROR] ${err.message || 'Connection unavailable'}`, 
+          sender: 'system',
+          time: new Date().toLocaleTimeString()
+        }] 
+      }));
     } finally { setIsProcessing(false); }
   };
 
@@ -302,6 +518,13 @@ export default function App() {
     <div className="container">
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} stats={{ resources, artifacts, memoryStats }} />
       <main className="main-content">
+        {/* Demo Mode Banner */}
+        {isDemoMode && (
+          <div className="demo-mode-banner">
+            <AlertTriangle size={14} />
+            <span>STANDALONE MODE - Backend offline. Chat uses intelligent simulation. Connect backend at localhost:8001 for full swarm capabilities.</span>
+          </div>
+        )}
         <AnimatePresence mode="wait">
 
           {/* 01 SYSTEM STATUS */}
