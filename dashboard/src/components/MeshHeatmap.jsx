@@ -128,15 +128,27 @@ const MeshHeatmap = () => {
     };
 
     const fetchMetrics = async () => {
+      let nodes = [];
+      let connections = [];
+
+      // Try Python backend first, then Vercel API routes
       try {
-        // Fetch mesh topology with timeout
         const meshRes = await axios.get(`${API_BASE}/mesh/topology`, { timeout: 3000 });
-        const nodes = meshRes.data.nodes || [];
-        
-        // Fetch system resources
-        const resRes = await axios.get(`${API_BASE}/system/resources`, { timeout: 3000 });
-        const resources = resRes.data || {};
-        
+        nodes = meshRes.data.nodes || [];
+        connections = meshRes.data.connections || [];
+      } catch (backendErr) {
+        try {
+          const meshRes = await axios.get('/api/mesh/topology', { timeout: 3000 });
+          nodes = meshRes.data.nodes || [];
+          connections = meshRes.data.connections || [];
+        } catch (apiErr) {
+          // Both failed, will use mock data below
+          throw apiErr;
+        }
+      }
+
+      // Process the fetched data
+      if (nodes.length > 0) {
         // Generate VRAM data from nodes (simulated if not available)
         const vramNodes = nodes.map((node, idx) => ({
           ...node,
@@ -146,8 +158,7 @@ const MeshHeatmap = () => {
         
         setVramData(vramNodes);
         
-        // Generate routing density data
-        const connections = meshRes.data.connections || [];
+        // Generate routing density data from connections
         const routingDensity = connections.slice(0, 10).map((conn, idx) => ({
           from: conn.from?.slice(0, 8),
           to: conn.to?.slice(0, 8),
@@ -168,36 +179,36 @@ const MeshHeatmap = () => {
           hotNodes: vramNodes.filter(n => n.vram_used / n.vram_total > 0.7).length,
           coldNodes: vramNodes.filter(n => n.vram_used / n.vram_total < 0.3).length
         });
-      } catch (err) {
-        console.warn("API unavailable, using demo data:", err.message);
-        // Use mock data when API is unavailable
-        const { nodes, routes } = generateMockData();
-        
-        // Add some variation to make it look live
-        const vramNodes = nodes.map(node => ({
-          ...node,
-          vram_used: Math.max(0.5, node.vram_used + (Math.random() - 0.5) * 0.5),
-        }));
-        
-        setVramData(vramNodes);
-        setRoutingData(routes.map(r => ({
-          ...r,
-          count: Math.max(5, r.count + Math.floor((Math.random() - 0.5) * 10))
-        })));
-        
-        const totalVram = vramNodes.reduce((sum, n) => sum + (n.vram_total || 0), 0);
-        const usedVram = vramNodes.reduce((sum, n) => sum + (n.vram_used || 0), 0);
-        const avgUtil = totalVram > 0 ? (usedVram / totalVram) * 100 : 0;
-        
-        setSystemMetrics({
-          totalVram: totalVram.toFixed(1),
-          usedVram: usedVram.toFixed(1),
-          avgUtilization: avgUtil.toFixed(1),
-          taskRoutes: routes.length,
-          hotNodes: vramNodes.filter(n => n.vram_used / n.vram_total > 0.7).length,
-          coldNodes: vramNodes.filter(n => n.vram_used / n.vram_total < 0.3).length
-        });
+        return; // Success, no need for mock data
       }
+      
+      // Use mock data when all APIs are unavailable (no nodes fetched)
+      const mockData = generateMockData();
+      
+      // Add some variation to make it look live
+      const mockVramNodes = mockData.nodes.map(node => ({
+        ...node,
+        vram_used: Math.max(0.5, node.vram_used + (Math.random() - 0.5) * 0.5),
+      }));
+      
+      setVramData(mockVramNodes);
+      setRoutingData(mockData.routes.map(r => ({
+        ...r,
+        count: Math.max(5, r.count + Math.floor((Math.random() - 0.5) * 10))
+      })));
+      
+      const totalVram = mockVramNodes.reduce((sum, n) => sum + (n.vram_total || 0), 0);
+      const usedVram = mockVramNodes.reduce((sum, n) => sum + (n.vram_used || 0), 0);
+      const avgUtil = totalVram > 0 ? (usedVram / totalVram) * 100 : 0;
+      
+      setSystemMetrics({
+        totalVram: totalVram.toFixed(1),
+        usedVram: usedVram.toFixed(1),
+        avgUtilization: avgUtil.toFixed(1),
+        taskRoutes: mockData.routes.length,
+        hotNodes: mockVramNodes.filter(n => n.vram_used / n.vram_total > 0.7).length,
+        coldNodes: mockVramNodes.filter(n => n.vram_used / n.vram_total < 0.3).length
+      });
     };
 
     fetchMetrics();

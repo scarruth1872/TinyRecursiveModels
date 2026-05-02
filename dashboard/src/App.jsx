@@ -302,53 +302,74 @@ export default function App() {
   // State to track if we're in demo mode (API unavailable)
   const [isDemoMode, setIsDemoMode] = useState(false);
 
-  // Sync Logic
+  // Sync Logic - tries Python backend first, then Vercel API routes, then mock data
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const endpoints = [
-          { key: 'experts', url: '/swarm/experts' },
-          { key: 'artifacts', url: '/artifacts' },
-          { key: 'resources', url: '/system/resources' },
-          { key: 'mesh', url: '/mesh/topology' },
-          { key: 'skills', url: '/learning/skills' },
-          { key: 'memory', url: '/memory/stats' },
-          { key: 'telemetry', url: '/swarm/telemetry' },
-        ];
+    const fetchFromEndpoint = async (baseUrl, endpoint) => {
+      const res = await fetch(`${baseUrl}${endpoint}`, { signal: AbortSignal.timeout(3000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    };
 
-        const dataPromises = endpoints.map(e => 
-          fetch(`${API_BASE}${e.url}`, { signal: AbortSignal.timeout(3000) })
-            .then(res => res.json())
-        );
+    const fetchData = async () => {
+      const endpoints = [
+        { key: 'experts', url: '/swarm/experts', apiUrl: '/api/swarm/experts' },
+        { key: 'artifacts', url: '/artifacts', apiUrl: '/api/artifacts' },
+        { key: 'resources', url: '/system/resources', apiUrl: '/api/system/resources' },
+        { key: 'mesh', url: '/mesh/topology', apiUrl: '/api/mesh/topology' },
+        { key: 'skills', url: '/learning/skills', apiUrl: '/api/learning/skills' },
+        { key: 'memory', url: '/memory/stats', apiUrl: '/api/memory/stats' },
+        { key: 'telemetry', url: '/swarm/telemetry', apiUrl: '/api/swarm/telemetry' },
+      ];
+
+      // Strategy 1: Try Python backend (localhost:8001)
+      try {
+        const dataPromises = endpoints.map(e => fetchFromEndpoint(API_BASE, e.url));
         const [expertsData, artifactsData, resourcesData, meshData, skillsData, memData, telemetryData] = await Promise.all(dataPromises);
 
         setIsDemoMode(false);
         setExperts(expertsData);
         if (expertsData.length > 0 && !selectedRole) setSelectedRole(expertsData[0].role);
-
-        // Fetch artifacts with content preview for display
-        const artRes = await fetch(`${API_BASE}/artifacts?include_content=true`);
-        const artData = await artRes.json();
-        setArtifacts(artData.artifacts || []);
+        setArtifacts(artifactsData.artifacts || []);
         setArtStats(artifactsData.stats);
         setResources(resourcesData);
         setMeshTopology(meshData);
         setLearnedSkills(skillsData.skills || []);
         setMemStats(memData);
         setOverview(telemetryData);
-
-      } catch (err) {
-        // API unavailable - switch to demo mode with mock data
-        console.warn("API unavailable, switching to demo mode:", err.message);
-        setIsDemoMode(true);
-        setExperts(MOCK_DATA.experts);
-        if (MOCK_DATA.experts.length > 0 && !selectedRole) setSelectedRole(MOCK_DATA.experts[0].role);
-        setArtifacts(MOCK_DATA.artifacts);
-        setMeshTopology(MOCK_DATA.mesh);
-        setLearnedSkills(MOCK_DATA.skills.skills);
-        setMemStats(MOCK_DATA.memory);
-        setOverview(MOCK_DATA.telemetry);
+        return; // Success with Python backend
+      } catch (backendErr) {
+        // Python backend unavailable, try Vercel API routes
       }
+
+      // Strategy 2: Try Vercel API routes
+      try {
+        const dataPromises = endpoints.map(e => fetchFromEndpoint('', e.apiUrl));
+        const [expertsData, artifactsData, resourcesData, meshData, skillsData, memData, telemetryData] = await Promise.all(dataPromises);
+
+        setIsDemoMode(true); // Mark as demo since using simulated API
+        setExperts(expertsData);
+        if (expertsData.length > 0 && !selectedRole) setSelectedRole(expertsData[0].role);
+        setArtifacts(artifactsData.artifacts || []);
+        setArtStats(artifactsData.stats);
+        setResources(resourcesData);
+        setMeshTopology(meshData);
+        setLearnedSkills(skillsData.skills || []);
+        setMemStats(memData);
+        setOverview(telemetryData);
+        return; // Success with Vercel API
+      } catch (apiErr) {
+        // Vercel API also unavailable, use mock data
+      }
+
+      // Strategy 3: Fallback to local mock data
+      setIsDemoMode(true);
+      setExperts(MOCK_DATA.experts);
+      if (MOCK_DATA.experts.length > 0 && !selectedRole) setSelectedRole(MOCK_DATA.experts[0].role);
+      setArtifacts(MOCK_DATA.artifacts);
+      setMeshTopology(MOCK_DATA.mesh);
+      setLearnedSkills(MOCK_DATA.skills.skills);
+      setMemStats(MOCK_DATA.memory);
+      setOverview(MOCK_DATA.telemetry);
     };
 
     const fetchTabData = async (tab) => {
