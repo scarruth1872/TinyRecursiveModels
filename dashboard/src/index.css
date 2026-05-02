@@ -1946,3 +1946,370 @@ textarea.input-field {
 .lcars-button.tan {
   background: var(--lcars-tan);
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DEMO MODE BANNER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.demo-mode-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent-warning);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: rgba(245, 158, 11, 0.3); }
+  50% { border-color: rgba(245, 158, 11, 0.6); }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE MEDIA QUERIES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Mobile First (< 768px) ─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  :root {
+    --sidebar-width: 60px;
+  }
+
+  html, body, #root {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .container {
+    grid-template-columns: var(--sidebar-width) 1fr;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  }
+
+  /* Collapsed sidebar on mobile */
+  .sidebar {
+    padding: 8px 4px;
+    width: var(--sidebar-width);
+  }
+
+  .sidebar::before {
+    content: 'TRM';
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 8px 4px 10px;
+  }
+
+  .sidebar-button {
+    flex-direction: column;
+    padding: 8px 4px;
+    gap: 4px;
+    font-size: 8px;
+    text-align: center;
+  }
+
+  .sidebar-button svg {
+    margin: 0;
+  }
+
+  .sidebar-button span {
+    display: block;
+    font-size: 7px;
+    line-height: 1.1;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Main content adjustments */
+  .main-content {
+    padding: 12px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .section-title {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  /* Stat cards stack on mobile */
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid.grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-card-value {
+    font-size: 18px;
+  }
+
+  /* Panel adjustments */
+  .panel {
+    padding: 12px;
+  }
+
+  .panel-header {
+    padding: 10px 12px;
+    font-size: 11px;
+  }
+
+  /* Chat adjustments */
+  .chat-container {
+    height: calc(100dvh - 200px);
+    min-height: 300px;
+  }
+
+  .chat-header {
+    padding: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chat-messages {
+    padding: 10px;
+    font-size: 12px;
+  }
+
+  .chat-input-area {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .chat-input-area input {
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .chat-input-area button {
+    padding: 10px 16px;
+    font-size: 11px;
+  }
+
+  /* Expert avatars */
+  .expert-avatar-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 10px;
+  }
+
+  /* Demo mode banner */
+  .demo-mode-banner {
+    font-size: 9px;
+    padding: 8px 10px;
+    flex-wrap: wrap;
+    text-align: center;
+  }
+
+  /* Tables */
+  .data-table {
+    font-size: 11px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 8px 6px;
+  }
+
+  /* Mesh heatmap */
+  .heatmap-container {
+    min-height: 200px;
+  }
+
+  /* Hide less important elements on mobile */
+  .mobile-hide {
+    display: none !important;
+  }
+
+  /* Memory query section */
+  .memory-section input {
+    font-size: 14px;
+  }
+
+  /* Progress bars */
+  .progress-bar {
+    height: 6px;
+  }
+
+  /* LCARS decorative elements - smaller on mobile */
+  .lcars-elbow {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* Flex layouts stack on mobile */
+  .flex-mobile-col {
+    flex-direction: column;
+  }
+
+  /* Button groups */
+  .button-group {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .lcars-button {
+    padding: 6px 12px;
+    font-size: 10px;
+  }
+}
+
+/* ── Small Mobile (< 480px) ─────────────────────────────────────────────── */
+@media (max-width: 479px) {
+  :root {
+    --sidebar-width: 50px;
+  }
+
+  .sidebar::before {
+    content: '';
+    padding: 4px;
+    border-bottom-width: 1px;
+  }
+
+  .sidebar-button span {
+    display: none;
+  }
+
+  .sidebar-button {
+    padding: 10px 6px;
+  }
+
+  .main-content {
+    padding: 8px;
+  }
+
+  .section-title {
+    font-size: 14px;
+  }
+
+  .stat-card {
+    padding: 10px;
+  }
+
+  .stat-card-label {
+    font-size: 9px;
+  }
+
+  .stat-card-value {
+    font-size: 16px;
+  }
+
+  .chat-container {
+    height: calc(100dvh - 180px);
+  }
+
+  .expert-avatar-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 9px;
+  }
+
+  .grid.grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Tablet (768px+) ────────────────────────────────────────────────────── */
+@media (min-width: 768px) {
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .md\:grid-cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .md\:col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .lg\:grid-cols-12 {
+    grid-template-columns: repeat(12, 1fr);
+  }
+
+  .lg\:col-span-4 {
+    grid-column: span 4 / span 4;
+  }
+
+  .lg\:col-span-8 {
+    grid-column: span 8 / span 8;
+  }
+
+  .lg\:text-xl {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE UTILITY CLASSES
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.overflow-x-auto {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.break-words {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+  .main-content {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+  
+  @media (max-width: 767px) {
+    .main-content {
+      padding-left: max(12px, env(safe-area-inset-left));
+      padding-right: max(12px, env(safe-area-inset-right));
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+    }
+  }
+}
